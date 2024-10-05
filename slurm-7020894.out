@@ -1,0 +1,162 @@
+device = cpu
+  0%|          | 0/100 [00:00<?, ?it/s]initial cost 251 best_tour 251, optimal_tour 1.5455650038265958
+initial cost 1.8156050020679686 best_cost 1.756461001345997, optimal_cost 1.5455650038265958
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+  0%|          | 0/100 [01:25<?, ?it/s, Avg Gap init:=17.4719, Avg Gap best:=13.6452, Avg Cost init:=1.8156, Avg Cost best:=1.7565, Avg Otpimal best:=1.5456]  1%|          | 1/100 [01:25<2:20:51, 85.37s/it, Avg Gap init:=17.4719, Avg Gap best:=13.6452, Avg Cost init:=1.8156, Avg Cost best:=1.7565, Avg Otpimal best:=1.5456]initial cost 251 best_tour 251, optimal_tour 1.591813993912183
+initial cost 1.9520909974671667 best_cost 1.783392996112525, optimal_cost 1.591813993912183
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+  1%|          | 1/100 [02:48<2:20:51, 85.37s/it, Avg Gap init:=20.0525, Avg Gap best:=12.8402, Avg Cost init:=1.8838, Avg Cost best:=1.7699, Avg Otpimal best:=1.5687]  2%|▏         | 2/100 [02:48<2:17:02, 83.91s/it, Avg Gap init:=20.0525, Avg Gap best:=12.8402, Avg Cost init:=1.8838, Avg Cost best:=1.7699, Avg Otpimal best:=1.5687]initial cost 251 best_tour 251, optimal_tour 1.5690730026344681
+initial cost 1.835548006269164 best_cost 1.7716940054760926, optimal_cost 1.5690730026344681
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+  2%|▏         | 2/100 [04:13<2:17:02, 83.91s/it, Avg Gap init:=19.0293, Avg Gap best:=12.8646, Avg Cost init:=1.8677, Avg Cost best:=1.7705, Avg Otpimal best:=1.5688]  3%|▎         | 3/100 [04:13<2:16:24, 84.38s/it, Avg Gap init:=19.0293, Avg Gap best:=12.8646, Avg Cost init:=1.8677, Avg Cost best:=1.7705, Avg Otpimal best:=1.5688]initial cost 251 best_tour 251, optimal_tour 1.6281850011764618
+initial cost 1.9103920025845582 best_cost 1.8583350023000094, optimal_cost 1.6281850011764618
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+  3%|▎         | 3/100 [05:33<2:16:24, 84.38s/it, Avg Gap init:=18.6052, Avg Gap best:=13.1823, Avg Cost init:=1.8784, Avg Cost best:=1.7925, Avg Otpimal best:=1.5837]  4%|▍         | 4/100 [05:33<2:12:41, 82.93s/it, Avg Gap init:=18.6052, Avg Gap best:=13.1823, Avg Cost init:=1.8784, Avg Cost best:=1.7925, Avg Otpimal best:=1.5837]initial cost 251 best_tour 251, optimal_tour 1.4735290057069506
+initial cost 1.7843740035386872 best_cost 1.6785200037193135, optimal_cost 1.4735290057069506
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+  4%|▍         | 4/100 [06:59<2:12:41, 82.93s/it, Avg Gap init:=19.1032, Avg Gap best:=13.3282, Avg Cost init:=1.8596, Avg Cost best:=1.7697, Avg Otpimal best:=1.5616]  5%|▌         | 5/100 [06:59<2:12:59, 83.99s/it, Avg Gap init:=19.1032, Avg Gap best:=13.3282, Avg Cost init:=1.8596, Avg Cost best:=1.7697, Avg Otpimal best:=1.5616]initial cost 251 best_tour 251, optimal_tour 1.4748150006998912
+initial cost 1.722736994168372 best_cost 1.6994549931405345, optimal_cost 1.4748150006998912
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+  5%|▌         | 5/100 [08:19<2:12:59, 83.99s/it, Avg Gap init:=18.7210, Avg Gap best:=13.6454, Avg Cost init:=1.8368, Avg Cost best:=1.7580, Avg Otpimal best:=1.5472]  6%|▌         | 6/100 [08:19<2:09:18, 82.54s/it, Avg Gap init:=18.7210, Avg Gap best:=13.6454, Avg Cost init:=1.8368, Avg Cost best:=1.7580, Avg Otpimal best:=1.5472]initial cost 251 best_tour 251, optimal_tour 1.572231000406191
+initial cost 1.856239995571741 best_cost 1.7448429956584732, optimal_cost 1.572231000406191
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+  6%|▌         | 6/100 [09:43<2:09:18, 82.54s/it, Avg Gap init:=18.6272, Avg Gap best:=13.2645, Avg Cost init:=1.8396, Avg Cost best:=1.7561, Avg Otpimal best:=1.5507]  7%|▋         | 7/100 [09:43<2:08:40, 83.01s/it, Avg Gap init:=18.6272, Avg Gap best:=13.2645, Avg Cost init:=1.8396, Avg Cost best:=1.7561, Avg Otpimal best:=1.5507]initial cost 251 best_tour 251, optimal_tour 1.6135019963658124
+initial cost 1.9826349897884938 best_cost 1.846970994152798, optimal_cost 1.6135019963658124
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+  7%|▋         | 7/100 [11:05<2:08:40, 83.01s/it, Avg Gap init:=19.1585, Avg Gap best:=13.4151, Avg Cost init:=1.8575, Avg Cost best:=1.7675, Avg Otpimal best:=1.5586]  8%|▊         | 8/100 [11:05<2:06:42, 82.64s/it, Avg Gap init:=19.1585, Avg Gap best:=13.4151, Avg Cost init:=1.8575, Avg Cost best:=1.7675, Avg Otpimal best:=1.5586]initial cost 251 best_tour 251, optimal_tour 1.4523500017985498
+initial cost 1.6830980024569726 best_cost 1.6053380046250822, optimal_cost 1.4523500017985498
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+  8%|▊         | 8/100 [12:29<2:06:42, 82.64s/it, Avg Gap init:=18.7951, Avg Gap best:=13.0950, Avg Cost init:=1.8381, Avg Cost best:=1.7494, Avg Otpimal best:=1.5468]  9%|▉         | 9/100 [12:29<2:06:00, 83.08s/it, Avg Gap init:=18.7951, Avg Gap best:=13.0950, Avg Cost init:=1.8381, Avg Cost best:=1.7494, Avg Otpimal best:=1.5468]initial cost 251 best_tour 251, optimal_tour 1.498191003127431
+initial cost 1.737183001176163 best_cost 1.6526659983719583, optimal_cost 1.498191003127431
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+  9%|▉         | 9/100 [13:50<2:06:00, 83.08s/it, Avg Gap init:=18.5108, Avg Gap best:=12.8166, Avg Cost init:=1.8280, Avg Cost best:=1.7398, Avg Otpimal best:=1.5419] 10%|█         | 10/100 [13:50<2:03:46, 82.52s/it, Avg Gap init:=18.5108, Avg Gap best:=12.8166, Avg Cost init:=1.8280, Avg Cost best:=1.7398, Avg Otpimal best:=1.5419]initial cost 251 best_tour 251, optimal_tour 1.634182999546283
+initial cost 1.9330649981957322 best_cost 1.8809990020918121, optimal_cost 1.634182999546283
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+ 10%|█         | 10/100 [15:14<2:03:46, 82.52s/it, Avg Gap init:=18.4907, Avg Gap best:=13.0245, Avg Cost init:=1.8375, Avg Cost best:=1.7526, Avg Otpimal best:=1.5503] 11%|█         | 11/100 [15:14<2:02:59, 82.92s/it, Avg Gap init:=18.4907, Avg Gap best:=13.0245, Avg Cost init:=1.8375, Avg Cost best:=1.7526, Avg Otpimal best:=1.5503]initial cost 251 best_tour 251, optimal_tour 1.7018359975263593
+initial cost 1.9706449987206724 best_cost 1.934285997886036, optimal_cost 1.7018359975263593
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+ 11%|█         | 11/100 [16:34<2:02:59, 82.92s/it, Avg Gap init:=18.2661, Avg Gap best:=13.0773, Avg Cost init:=1.8486, Avg Cost best:=1.7677, Avg Otpimal best:=1.5629] 12%|█▏        | 12/100 [16:34<2:00:24, 82.10s/it, Avg Gap init:=18.2661, Avg Gap best:=13.0773, Avg Cost init:=1.8486, Avg Cost best:=1.7677, Avg Otpimal best:=1.5629]initial cost 251 best_tour 251, optimal_tour 1.6001789998699678
+initial cost 1.9428980019802111 best_cost 1.8273229983424244, optimal_cost 1.6001789998699678
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+ 12%|█▏        | 12/100 [17:59<2:00:24, 82.10s/it, Avg Gap init:=18.5085, Avg Gap best:=13.1633, Avg Cost init:=1.8559, Avg Cost best:=1.7723, Avg Otpimal best:=1.5658] 13%|█▎        | 13/100 [17:59<2:00:11, 82.89s/it, Avg Gap init:=18.5085, Avg Gap best:=13.1633, Avg Cost init:=1.8559, Avg Cost best:=1.7723, Avg Otpimal best:=1.5658]initial cost 251 best_tour 251, optimal_tour 1.5340050000622796
+initial cost 1.8756770045492885 best_cost 1.737503000867946, optimal_cost 1.5340050000622796
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+ 13%|█▎        | 13/100 [19:22<2:00:11, 82.89s/it, Avg Gap init:=18.7774, Avg Gap best:=13.1706, Avg Cost init:=1.8573, Avg Cost best:=1.7698, Avg Otpimal best:=1.5635] 14%|█▍        | 14/100 [19:22<1:58:45, 82.85s/it, Avg Gap init:=18.7774, Avg Gap best:=13.1706, Avg Cost init:=1.8573, Avg Cost best:=1.7698, Avg Otpimal best:=1.5635]initial cost 251 best_tour 251, optimal_tour 1.5597500033945835
+initial cost 1.7782430058869068 best_cost 1.718304003967205, optimal_cost 1.5597500033945835
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+ 14%|█▍        | 14/100 [20:45<1:58:45, 82.85s/it, Avg Gap init:=18.4594, Avg Gap best:=12.9703, Avg Cost init:=1.8520, Avg Cost best:=1.7664, Avg Otpimal best:=1.5633] 15%|█▌        | 15/100 [20:45<1:57:46, 83.14s/it, Avg Gap init:=18.4594, Avg Gap best:=12.9703, Avg Cost init:=1.8520, Avg Cost best:=1.7664, Avg Otpimal best:=1.5633]initial cost 251 best_tour 251, optimal_tour 1.6299760011879698
+initial cost 1.9330679981703724 best_cost 1.87125399978504, optimal_cost 1.6299760011879698
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+ 15%|█▌        | 15/100 [22:06<1:57:46, 83.14s/it, Avg Gap init:=18.4679, Avg Gap best:=13.0848, Avg Cost init:=1.8571, Avg Cost best:=1.7730, Avg Otpimal best:=1.5674] 16%|█▌        | 16/100 [22:06<1:55:24, 82.44s/it, Avg Gap init:=18.4679, Avg Gap best:=13.0848, Avg Cost init:=1.8571, Avg Cost best:=1.7730, Avg Otpimal best:=1.5674]initial cost 251 best_tour 251, optimal_tour 1.598477995336907
+initial cost 1.8501479989290601 best_cost 1.8039320021425738, optimal_cost 1.598477995336907
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+ 16%|█▌        | 16/100 [23:31<1:55:24, 82.44s/it, Avg Gap init:=18.3077, Avg Gap best:=13.0711, Avg Cost init:=1.8567, Avg Cost best:=1.7748, Avg Otpimal best:=1.5693] 17%|█▋        | 17/100 [23:31<1:54:51, 83.03s/it, Avg Gap init:=18.3077, Avg Gap best:=13.0711, Avg Cost init:=1.8567, Avg Cost best:=1.7748, Avg Otpimal best:=1.5693]initial cost 251 best_tour 251, optimal_tour 1.5344609999983732
+initial cost 1.7390439987239006 best_cost 1.7020979961844205, optimal_cost 1.5344609999983732
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+ 17%|█▋        | 17/100 [24:51<1:54:51, 83.03s/it, Avg Gap init:=18.0313, Avg Gap best:=12.9519, Avg Cost init:=1.8501, Avg Cost best:=1.7707, Avg Otpimal best:=1.5673] 18%|█▊        | 18/100 [24:51<1:52:13, 82.12s/it, Avg Gap init:=18.0313, Avg Gap best:=12.9519, Avg Cost init:=1.8501, Avg Cost best:=1.7707, Avg Otpimal best:=1.5673]initial cost 251 best_tour 251, optimal_tour 1.6048039978413726
+initial cost 1.9107229976107192 best_cost 1.8001279999225517, optimal_cost 1.6048039978413726
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+ 18%|█▊        | 18/100 [26:16<1:52:13, 82.12s/it, Avg Gap init:=18.0856, Avg Gap best:=12.9108, Avg Cost init:=1.8533, Avg Cost best:=1.7723, Avg Otpimal best:=1.5693] 19%|█▉        | 19/100 [26:16<1:52:05, 83.02s/it, Avg Gap init:=18.0856, Avg Gap best:=12.9108, Avg Cost init:=1.8533, Avg Cost best:=1.7723, Avg Otpimal best:=1.5693]initial cost 251 best_tour 251, optimal_tour 1.6759989959894028
+initial cost 2.110986005485074 best_cost 2.0022440049499437, optimal_cost 1.6759989959894028
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+/project/p_gnn001/code/tsp/tsp/test.py:53: RuntimeWarning: invalid value encountered in scalar divide
+  similarity = dot_product / (norm_A * norm_B)
+ 19%|█▉        | 19/100 [27:37<1:52:05, 83.02s/it, Avg Gap init:=18.4790, Avg Gap best:=13.2386, Avg Cost init:=1.8662, Avg Cost best:=1.7838, Avg Otpimal best:=1.5746] 20%|██        | 20/100 [27:37<1:49:58, 82.48s/it, Avg Gap init:=18.4790, Avg Gap best:=13.2386, Avg Cost init:=1.8662, Avg Cost best:=1.7838, Avg Otpimal best:=1.5746]slurmstepd: error: *** JOB 7020894 ON x1001c1s0b0n1 CANCELLED AT 2024-10-04T00:13:15 ***
