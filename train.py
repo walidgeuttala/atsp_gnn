@@ -20,7 +20,7 @@ from args import parse_args
 # Suppress FutureWarnings
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
+# what the fuck is this
 def epoch_train(model, train_loader, target, criterion, optimizer, device):
     model.train()
 
