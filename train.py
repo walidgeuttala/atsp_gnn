@@ -6,31 +6,27 @@ import json
 import os 
 
 import tqdm.auto as tqdm
-import numpy as np
-import networkx as nx
 import torch
 import dgl.nn
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-import gnngls
-from gnngls import datasets, algorithms
+from gnngls import datasets
 from gnngls.model import get_model
 from utils import *
 from args import parse_args
 # Suppress FutureWarnings
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-# what the fuck is this zed
 
-def epoch_train(model, train_loader, target, criterion, optimizer, device):
+def epoch_train(model, train_loader, criterion, optimizer, device):
     model.train()
 
     epoch_loss = 0
     for batch_i, batch in enumerate(train_loader):
         batch = batch.to(device)
         x = batch.ndata['weight']
-        y = batch.ndata[target]
+        y = batch.ndata['regret']
 
         optimizer.zero_grad()
         y_pred = model(batch, x)
@@ -44,7 +40,7 @@ def epoch_train(model, train_loader, target, criterion, optimizer, device):
 
     return epoch_loss
 
-def epoch_test(model, data_loader, target, criterion, device):
+def epoch_test(model, data_loader, criterion, device):
     with torch.no_grad():
         model.eval()
 
@@ -52,7 +48,7 @@ def epoch_test(model, data_loader, target, criterion, device):
         for batch_i, batch in enumerate(data_loader):
             batch = batch.to(device)
             x = batch.ndata['weight']
-            y = batch.ndata[target]
+            y = batch.ndata['regret']
 
             y_pred = model(batch, x)
             loss = criterion(y_pred, y.type_as(y_pred))
@@ -66,91 +62,68 @@ def epoch_test(model, data_loader, target, criterion, device):
 def train(args, trial_id):
     fix_seed(args.seed)
     # Load dataset
-    train_set = datasets.TSPDataset(args.data_dir / 'train.txt')
-    val_set = datasets.TSPDataset(args.data_dir / 'val.txt')
+    train_set = datasets.TSPDataset(f'{args.data_dir}/train.txt')
+    val_set = datasets.TSPDataset(f'{args.data_dir}/val.txt')
 
     # use GPU if it is available
-    device = torch.device('cuda:0' if args.use_gpu and torch.cuda.is_available() else 'cpu')
-    print('device =', device)
+    args.device = torch.device('cuda' if args.device  == 'cuda' and torch.cuda.is_available() else 'cpu')
+    print('device =', args.device)
 
-    model = get_model(args).to(device)
+    model = get_model(args).to(args.device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr_init)
     lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, args.lr_decay)
     criterion = torch.nn.MSELoss()
 
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, collate_fn=dgl.batch,
-                              num_workers=16, pin_memory=True)
+                              num_workers=4, pin_memory=True)
     val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=True, collate_fn=dgl.batch,
-                            num_workers=16, pin_memory=True)
+                            num_workers=4, pin_memory=True)
 
     timestamp = datetime.datetime.now().strftime('%b%d_%H-%M-%S')
-    run_name = f'{timestamp}_{args.model}_trained_ATSP{args.tsp_size}'
-    log_dir = args.tb_dir / run_name
+    run_name = f'{timestamp}_{args.model}_trained_ATSP{args.atsp_size}'
+    os.makedirs(f'{args.tb_dir}/{run_name}', exist_ok=True)
+    log_dir = f'{args.tb_dir}/{run_name}/trial_{str(trial_id)}'
+    os.makedirs(log_dir, exist_ok=True)
     writer = SummaryWriter(log_dir)
 
-    # early stopping
-    best_score = None
-    counter = 0
-    
-    
     pbar = tqdm.trange(args.n_epochs)
-    min_epoch_val_loss = float(1e6)
+    
+    result = dict()
+    result['min_val_loss'] = torch.tensor(float(1e6))
+    result['train_loss'] = torch.empty((args.n_epochs), dtype=torch.float)
+    result['val_loss'] = torch.empty((args.n_epochs), dtype=torch.float)
+    # early stopping
+    result['best_score'] = None
+    result['counter'] = 0
+
     for epoch in pbar:
-        epoch_loss = epoch_train(model, train_loader, args.target, criterion, optimizer, device)
-        writer.add_scalar("Loss/train", epoch_loss, epoch)
-
-        epoch_val_loss = epoch_test(model, val_loader, args.target, criterion, device)
-        writer.add_scalar("Loss/validation", epoch_val_loss, epoch)
-        average_corr1 = 0
-        average_corr2 = 0
-        num_samples = 20
-        average_gap = 0
-        for idx in range(num_samples):
-            G = nx.read_gpickle(args.data_dir / val_set.instances[idx])
-            H = val_set.get_scaled_features(G).to(device)
-            x = H.ndata['weight']
-            y = H.ndata['regret']
-            with torch.no_grad():
-                y_pred = model(H, x)
-            
-            regret_pred = val_set.scalers['regret'].inverse_transform(y_pred.cpu().numpy())
-            es = H.ndata['e'].cpu().numpy()
-            for e, regret_pred_i in zip(es, regret_pred):
-                G.edges[e]['regret_pred'] = np.maximum(regret_pred_i.item(), 0)
-            G = tsp_to_atsp_instance(G)
-            opt_cost = gnngls.optimal_cost(G, weight='weight')
-            print(opt_cost)
-            init_tour = algorithms.nearest_neighbor(G, 0, weight='regret_pred')
-            init_cost = gnngls.tour_cost(G, init_tour)
-            average_corr1 += correlation_matrix(y_pred.cpu(),H.ndata['regret'].cpu())
-            average_corr2 += cosine_similarity(y_pred.cpu().flatten(),H.ndata['regret'].cpu().flatten())
-            average_gap += (init_cost / opt_cost - 1) * 100
-
-        min_epoch_val_loss = min(min_epoch_val_loss, epoch_val_loss)
-
-        pbar.set_postfix({
-            'Train Loss': '{:.4f}'.format(epoch_loss),
-            'Validation Loss': '{:.4f}'.format(epoch_val_loss),
-            "correlation : ": '{:.4f}'.format(average_corr1/num_samples),
-            "cosin correlation : ": '{:.4f}'.format(average_corr2/num_samples),
-            "gap : ": '{:.4f}'.format(average_gap/num_samples),
-        })
+        result['train_loss'][epoch] = epoch_train(model, train_loader, criterion, optimizer, args.device)
+        result['val_loss'][epoch] = epoch_test(model, val_loader, criterion, args.device)
         
+        result2 = atsp_results(model, args, val_set)
+        
+        for key, value in result2.items():
+            writer.add_scalar(key, value, global_step=epoch) 
+
+        result['min_val_loss'] = torch.min(result['min_val_loss'], result['val_loss'][epoch])
+
+        formatted_result = {key: f'{(value/args.n_samples_result_train):.4f}' for key, value in result2.items()}  # Format values to 4 decimal places
+        pbar.set_postfix(**formatted_result) 
+                
+        # Saving the model
         if args.checkpoint_freq is not None and epoch > 0 and epoch % args.checkpoint_freq == 0:
             checkpoint_name = f'checkpoint_{epoch}.pt'
-            save(model, optimizer, epoch, epoch_loss, epoch_val_loss, log_dir / checkpoint_name)
+            save(model, optimizer, epoch, result['train_loss'][epoch], result['val_loss'][epoch], f'{log_dir}/{checkpoint_name}')
 
-        if best_score is None or epoch_val_loss < best_score - args.min_delta:
-            save(model, optimizer, epoch, epoch_loss, epoch_val_loss, log_dir / 'checkpoint_best_val.pt')
-
-            best_score = epoch_val_loss
-            counter = 0
+        if result['best_score'] is None or result['val_loss'][epoch] < result['best_score'] - args.min_delta:
+            save(model, optimizer, epoch, result['train_loss'][epoch], result['val_loss'][epoch], f'{log_dir}/checkpoint_best_val.pt')
+            result['best_score'] = result['val_loss'][epoch]
+            result['counter'] = 0
         else:
-            counter += 1
+            result['counter'] += 1
         
-        
-        if counter >= args.patience:
+        if result['counter'] >= args.patience:
             pbar.close()
             break
 
@@ -159,15 +132,16 @@ def train(args, trial_id):
     writer.close()
 
     params = dict(vars(args))
-    params['data_dir'] = str(params['data_dir'])
-    params['tb_dir'] = str(params['tb_dir'])
-    json.dump(params, open(args.tb_dir / run_name / 'params.json', 'w'))
+    params['device'] = str(args.device)  # Convert device to a string
 
-    save(model, optimizer, epoch, epoch_loss, epoch_val_loss, log_dir / 'checkpoint_final.pt')
-    return min_epoch_val_loss
+    json.dump(params, open(f'{log_dir}/params.json', 'w'))
+
+    save(model, optimizer, epoch, result['train_loss'][epoch], result['val_loss'][epoch], f'{log_dir}/checkpoint_final.pt')
+    
+    return result['min_val_loss']
 
 if __name__ == "__main__":
     args = parse_args()
-    os.makedirs(log_dir, exist_ok=True)
-    for _ in range(args.n_trials):
-        train(args)
+    os.makedirs(args.tb_dir, exist_ok=True)
+    for trial_id in range(args.n_trials):
+        print(f"Best Validation Loss : {train(args, trial_id)}")

@@ -1,0 +1,9 @@
+device = cuda
+  0%|          | 0/100 [00:00<?, ?it/s]initial cost 151 best_tour 151, optimal_tour 1.4238450065458892
+initial cost 1.7758520046336344 best_cost 1.680103000064264, optimal_cost 1.4238450065458892
+  0%|          | 0/100 [00:11<?, ?it/s]
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 98, in <module>
+    with open(output_path / f"instance{instance}.txt", "w") as f:
+              ~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for /: 'str' and 'str'

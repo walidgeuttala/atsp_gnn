@@ -1,14 +1,15 @@
+import sys
 import inspect
-import dgl.nn as dglnn
-import torch.nn as nn
-import dgl
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
+import dgl
+import dgl.nn as dglnn
 
-from model_utils import *
+from gnngls.model_utils import *
 
 class HetroGAT(nn.Module):
-    def __init__(self, input_dim, hidden_dim, output_dim, relation_types, num_gnn_layers=4, num_heads=16):
+    def __init__(self, input_dim, hidden_dim, output_dim, relation_types, num_gnn_layers=4, num_heads=16, aggregate='sum'):
         super().__init__()
         self.relation_types = relation_types
 
@@ -19,10 +20,13 @@ class HetroGAT(nn.Module):
             self.gnn_layers.append(
                 dglnn.HeteroGraphConv({
                     rel: dgl.nn.GATConv(hidden_dim, hidden_dim // num_heads, num_heads)
-                    for rel in relation_types
-                }, aggregate='sum')
+                    for rel in relation_types.split(' ')
+                }, aggregate=aggregate)
             )
-        self.decision_layer = MLP(hidden_dim, hidden_dim, output_dim)
+        if aggregate == 'sum':
+            self.decision_layer = MLP(hidden_dim, hidden_dim, output_dim)
+        elif aggregate == 'cat':
+            self.decision_layer = MLP(hidden_dim*num_gnn_layers, hidden_dim, output_dim)
 
     def forward(self, graph, inputs):
         with graph.local_scope():
@@ -40,7 +44,7 @@ class HetroGAT(nn.Module):
 
 def get_model(args):
     try:
-        model = getattr(globals(), args.model)
+        model = getattr(sys.modules[__name__], args.model)
     except AttributeError:
         raise ValueError(f"Model '{args.model}' not recognized")
     

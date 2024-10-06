@@ -4,6 +4,41 @@ import numpy as np
 import networkx as nx
 import dgl
 
+import gnngls
+from gnngls import algorithms
+
+
+
+def atsp_results(model, args, val_set):
+    result2 = dict()
+    keys = ['avg_corr', 'avg_corr_cosin', 'avg_init_cost', 'avg_opt_cost', 'avg_gap']
+    for key in keys:
+        result2.setdefault(key, 0.)
+    for idx in range(args.n_samples_result_train):
+        G = nx.read_gpickle(f'{args.data_dir}/{val_set.instances[idx]}')
+        H = val_set.get_scaled_features(G).to(args.device)
+        x = H.ndata['weight']
+        y = H.ndata['regret']
+        with torch.no_grad():
+            y_pred = model(H, x)
+        
+        regret_pred = val_set.scalers['regret'].inverse_transform(y_pred.cpu().numpy())
+        es = H.ndata['e'].cpu().numpy()
+        for e, regret_pred_i in zip(es, regret_pred):
+            G.edges[e]['regret_pred'] = np.maximum(regret_pred_i.item(), 0)
+        
+        opt_cost = gnngls.optimal_cost(G, weight='weight')
+        
+        init_tour = algorithms.nearest_neighbor(G, 0, weight='regret_pred')
+        init_cost = gnngls.tour_cost(G, init_tour)
+        result2['avg_corr'] += correlation_matrix(y_pred.cpu(), H.ndata['regret'].cpu())
+        result2['avg_corr_cosin'] += cosine_similarity(y_pred.cpu().flatten(), H.ndata['regret'].cpu().flatten())
+        result2['avg_init_cost'] += init_cost
+        result2['avg_opt_cost'] += opt_cost
+        result2['avg_gap'] += (init_cost / opt_cost - 1) * 100
+    
+    return result2
+
 def tsp_to_atsp_instance(G1):
     num_nodes = G1.number_of_nodes() // 2
     G2 = nx.DiGraph()
@@ -34,10 +69,18 @@ def fix_seed(seed=0):
     dgl.random.seed(seed)
 
 def cosine_similarity(A, B):
+    # Calculate the dot product and norms
     dot_product = np.dot(A, B)
     norm_A = np.linalg.norm(A)
     norm_B = np.linalg.norm(B)
+
+    # Handle the case where norm_A or norm_B is zero
+    if norm_A == 0 or norm_B == 0:
+        return 0.0
+
+    # Calculate the similarity
     similarity = dot_product / (norm_A * norm_B)
+    
     return similarity
 
 def correlation_matrix(tensor1, tensor2):
@@ -56,26 +99,6 @@ def save(model, optimizer, epoch, train_loss, val_loss, save_path):
         'loss': train_loss,
         'val_loss': val_loss
     }, save_path)
-
-def cosine_similarity(A, B):
-    dot_product = np.dot(A, B)
-    norm_A = np.linalg.norm(A)
-    norm_B = np.linalg.norm(B)
-    similarity = dot_product / (norm_A * norm_B)
-    return similarity
-
-def correlation_matrix(tensor1, tensor2):
-    
-    # Flatten tensors into 1D arrays
-    flat_tensor1 = tensor1.flatten().numpy()
-    flat_tensor2 = tensor2.flatten().numpy()
-
-    # Concatenate flattened tensors along the second axis
-
-    # Compute the correlation matrix
-    corr_matrix = np.corrcoef(flat_tensor1, flat_tensor2)[0, 1]
-    
-    return corr_matrix
 
 def add_diag(num_nodes, t1):
     n = num_nodes

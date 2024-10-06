@@ -1,0 +1,13 @@
+usage: test.py [-h] [--data_dir DATA_DIR] [--tb_dir TB_DIR]
+               [--atsp_size ATSP_SIZE] [--model MODEL] [--input_dim INPUT_DIM]
+               [--hidden_dim HIDDEN_DIM] [--output_dim OUTPUT_DIM]
+               [--relation_types RELATION_TYPES] [--n_gnn_layers N_GNN_LAYERS]
+               [--n_heads N_HEADS] [--kj {cat,max}] [--aggregate {cat,sum}]
+               [--lr_init LR_INIT] [--lr_decay LR_DECAY]
+               [--min_delta MIN_DELTA] [--patience PATIENCE]
+               [--batch_size BATCH_SIZE] [--n_epochs N_EPOCHS]
+               [--checkpoint_freq CHECKPOINT_FREQ] [--seed SEED]
+               [--n_trials N_TRIALS]
+               [--n_samples_result_train N_SAMPLES_RESULT_TRAIN]
+               [--device DEVICE]
+test.py: error: unrecognized arguments: 150 ../tsp_input/generated_insatnces_100_size_150 ../atsp_model_train_result/Oct06_23-31-25_HetroGAT_trained_ATSP50/trial_0/

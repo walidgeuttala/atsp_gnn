@@ -1,0 +1,7 @@
+device = cuda
+  0%|          | 0/100 [00:00<?, ?it/s]  0%|          | 0/100 [00:11<?, ?it/s]
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 80, in <module>
+    t + args_test.time_limit, weight='weight',
+    ^
+NameError: name 't' is not defined

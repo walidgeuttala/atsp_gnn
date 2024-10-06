@@ -1,0 +1,50 @@
+device = cuda
+  0%|          | 0/100 [00:00<?, ?it/s]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+  0%|          | 0/100 [00:11<?, ?it/s, Sum GNN time:=10.7531, Sum Search time:=0.6121, Avg Gap init:=24.7223, Avg Gap best:=17.9976, Avg Cost init:=1.7759, Avg Cost best:=1.6801, Avg Otpimal best:=1.4238, Avg counts =32.0000]  1%|          | 1/100 [00:11<19:32, 11.85s/it, Sum GNN time:=10.7531, Sum Search time:=0.6121, Avg Gap init:=24.7223, Avg Gap best:=17.9976, Avg Cost init:=1.7759, Avg Cost best:=1.6801, Avg Otpimal best:=1.4238, Avg counts =32.0000]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+  1%|          | 1/100 [00:22<19:32, 11.85s/it, Sum GNN time:=20.9668, Sum Search time:=0.9363, Avg Gap init:=19.3663, Avg Gap best:=14.9176, Avg Cost init:=1.8270, Avg Cost best:=1.7612, Avg Otpimal best:=1.5356, Avg counts =24.0000]  2%|▏         | 2/100 [00:22<18:30, 11.33s/it, Sum GNN time:=20.9668, Sum Search time:=0.9363, Avg Gap init:=19.3663, Avg Gap best:=14.9176, Avg Cost init:=1.8270, Avg Cost best:=1.7612, Avg Otpimal best:=1.5356, Avg counts =24.0000]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+  2%|▏         | 2/100 [00:37<18:30, 11.33s/it, Sum GNN time:=30.4179, Sum Search time:=5.2739, Avg Gap init:=18.8285, Avg Gap best:=14.3796, Avg Cost init:=1.8634, Avg Cost best:=1.7952, Avg Otpimal best:=1.5718, Avg counts =61.3333]  3%|▎         | 3/100 [00:37<20:26, 12.64s/it, Sum GNN time:=30.4179, Sum Search time:=5.2739, Avg Gap init:=18.8285, Avg Gap best:=14.3796, Avg Cost init:=1.8634, Avg Cost best:=1.7952, Avg Otpimal best:=1.5718, Avg counts =61.3333]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+  3%|▎         | 3/100 [00:53<20:26, 12.64s/it, Sum GNN time:=44.7474, Sum Search time:=6.3049, Avg Gap init:=19.1712, Avg Gap best:=14.8634, Avg Cost init:=1.8599, Avg Cost best:=1.7938, Avg Otpimal best:=1.5635, Avg counts =51.0000]  4%|▍         | 4/100 [00:53<22:29, 14.06s/it, Sum GNN time:=44.7474, Sum Search time:=6.3049, Avg Gap init:=19.1712, Avg Gap best:=14.8634, Avg Cost init:=1.8599, Avg Cost best:=1.7938, Avg Otpimal best:=1.5635, Avg counts =51.0000]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+  4%|▍         | 4/100 [01:06<22:29, 14.06s/it, Sum GNN time:=56.8535, Sum Search time:=6.6011, Avg Gap init:=19.2934, Avg Gap best:=15.7431, Avg Cost init:=1.8439, Avg Cost best:=1.7895, Avg Otpimal best:=1.5480, Avg counts =44.0000]  5%|▌         | 5/100 [01:06<21:35, 13.63s/it, Sum GNN time:=56.8535, Sum Search time:=6.6011, Avg Gap init:=19.2934, Avg Gap best:=15.7431, Avg Cost init:=1.8439, Avg Cost best:=1.7895, Avg Otpimal best:=1.5480, Avg counts =44.0000]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+  5%|▌         | 5/100 [01:17<21:35, 13.63s/it, Sum GNN time:=66.7424, Sum Search time:=7.6321, Avg Gap init:=18.8356, Avg Gap best:=14.5908, Avg Cost init:=1.8393, Avg Cost best:=1.7739, Avg Otpimal best:=1.5498, Avg counts =40.0000]  6%|▌         | 6/100 [01:17<20:21, 13.00s/it, Sum GNN time:=66.7424, Sum Search time:=7.6321, Avg Gap init:=18.8356, Avg Gap best:=14.5908, Avg Cost init:=1.8393, Avg Cost best:=1.7739, Avg Otpimal best:=1.5498, Avg counts =40.0000]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+  6%|▌         | 6/100 [01:31<20:21, 13.00s/it, Sum GNN time:=79.3883, Sum Search time:=8.0690, Avg Gap init:=18.4653, Avg Gap best:=13.9745, Avg Cost init:=1.8469, Avg Cost best:=1.7769, Avg Otpimal best:=1.5609, Avg counts =37.7143]  7%|▋         | 7/100 [01:31<20:26, 13.19s/it, Sum GNN time:=79.3883, Sum Search time:=8.0690, Avg Gap init:=18.4653, Avg Gap best:=13.9745, Avg Cost init:=1.8469, Avg Cost best:=1.7769, Avg Otpimal best:=1.5609, Avg counts =37.7143]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+  7%|▋         | 7/100 [01:43<20:26, 13.19s/it, Sum GNN time:=89.4608, Sum Search time:=8.5163, Avg Gap init:=18.6219, Avg Gap best:=13.9173, Avg Cost init:=1.8521, Avg Cost best:=1.7787, Avg Otpimal best:=1.5630, Avg counts =36.0000]  8%|▊         | 8/100 [01:43<19:30, 12.72s/it, Sum GNN time:=89.4608, Sum Search time:=8.5163, Avg Gap init:=18.6219, Avg Gap best:=13.9173, Avg Cost init:=1.8521, Avg Cost best:=1.7787, Avg Otpimal best:=1.5630, Avg counts =36.0000]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+  8%|▊         | 8/100 [01:54<19:30, 12.72s/it, Sum GNN time:=99.7383, Sum Search time:=8.6759, Avg Gap init:=17.7945, Avg Gap best:=13.5633, Avg Cost init:=1.8625, Avg Cost best:=1.7964, Avg Otpimal best:=1.5838, Avg counts =32.8889]  9%|▉         | 9/100 [01:54<18:24, 12.14s/it, Sum GNN time:=99.7383, Sum Search time:=8.6759, Avg Gap init:=17.7945, Avg Gap best:=13.5633, Avg Cost init:=1.8625, Avg Cost best:=1.7964, Avg Otpimal best:=1.5838, Avg counts =32.8889]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+  9%|▉         | 9/100 [02:05<18:24, 12.14s/it, Sum GNN time:=109.9766, Sum Search time:=9.0406, Avg Gap init:=17.5261, Avg Gap best:=13.4668, Avg Cost init:=1.8679, Avg Cost best:=1.8042, Avg Otpimal best:=1.5919, Avg counts =31.6000] 10%|█         | 10/100 [02:05<17:40, 11.79s/it, Sum GNN time:=109.9766, Sum Search time:=9.0406, Avg Gap init:=17.5261, Avg Gap best:=13.4668, Avg Cost init:=1.8679, Avg Cost best:=1.8042, Avg Otpimal best:=1.5919, Avg counts =31.6000]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+ 10%|█         | 10/100 [02:19<17:40, 11.79s/it, Sum GNN time:=122.8462, Sum Search time:=9.6614, Avg Gap init:=17.1012, Avg Gap best:=13.2982, Avg Cost init:=1.8647, Avg Cost best:=1.8050, Avg Otpimal best:=1.5948, Avg counts =29.8182] 11%|█         | 11/100 [02:19<18:36, 12.54s/it, Sum GNN time:=122.8462, Sum Search time:=9.6614, Avg Gap init:=17.1012, Avg Gap best:=13.2982, Avg Cost init:=1.8647, Avg Cost best:=1.8050, Avg Otpimal best:=1.5948, Avg counts =29.8182]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+ 11%|█         | 11/100 [02:33<18:36, 12.54s/it, Sum GNN time:=135.9320, Sum Search time:=10.2374, Avg Gap init:=16.9634, Avg Gap best:=13.0296, Avg Cost init:=1.8642, Avg Cost best:=1.8023, Avg Otpimal best:=1.5961, Avg counts =30.0000] 12%|█▏        | 12/100 [02:33<19:09, 13.07s/it, Sum GNN time:=135.9320, Sum Search time:=10.2374, Avg Gap init:=16.9634, Avg Gap best:=13.0296, Avg Cost init:=1.8642, Avg Cost best:=1.8023, Avg Otpimal best:=1.5961, Avg counts =30.0000]slurmstepd: error: *** JOB 7064389 ON x1001c3s1b0n1 CANCELLED AT 2024-10-07T00:24:40 ***

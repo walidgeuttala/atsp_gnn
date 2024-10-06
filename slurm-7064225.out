@@ -1,0 +1,28 @@
+device = cuda
+  0%|          | 0/100 [00:00<?, ?it/s]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[:, None]
+/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
+  c /= stddev[None, :]
+  0%|          | 0/100 [00:16<?, ?it/s]
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 125, in <module>
+    result['avg_corr_cosine'].append(cosine_similarity(y_pred.cpu().view(-1), H.ndata['regret'].cpu().view(-1)))
+                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/utils.py", line 72, in cosine_similarity
+    if np.all(B == 0):
+       ^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/core/fromnumeric.py", line 2504, in all
+    return _wrapreduction(a, np.logical_and, 'all', axis, None, out,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/core/fromnumeric.py", line 86, in _wrapreduction
+    return reduction(axis=axis, out=out, **passkwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: all() received an invalid combination of arguments - got (out=NoneType, axis=NoneType, ), but expected one of:
+ * ()
+ * (tuple of ints dim, bool keepdim)
+      didn't match because some of the keywords were incorrect: out, axis
+ * (int dim, bool keepdim)
+      didn't match because some of the keywords were incorrect: out, axis
+ * (name dim, bool keepdim)
+      didn't match because some of the keywords were incorrect: out, axis
+

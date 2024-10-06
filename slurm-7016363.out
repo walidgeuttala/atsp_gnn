@@ -1,2 +1,0 @@
-/scratch/slurm/SlurmdSpoolDir/x1001c2s1b0n0/job7016363/slurm_script: line 31: 407019 Killed                  python test.py ../generated_insatnces_100_size_1000/test.txt ../model_result_try_size_50_samples_1000/Sep30_21-08-41_e549c15adf494579b25fb67d7836c7af/checkpoint_best_val.pt ../runs_lib_19_regret2 regret_pred ../output_ATSP_trained_50_size_samples_100_size_1000 --use_gpu
-slurmstepd: error: Detected 1 oom-kill event(s) in StepId=7016363.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.

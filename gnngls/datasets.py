@@ -10,7 +10,6 @@ import torch.utils.data
 
 from . import tour_cost, fixed_edge_tour, optimal_cost as get_optimal_cost
 
-
 def set_features(G):
     for e in G.edges:
         G.edges[e]['features'] = np.array([
@@ -40,21 +39,6 @@ def set_labels2(G):
     for e in G.edges:
         regret = 0.
         G.edges[e]['regret'] = regret
-
-# def string_graph(G1):
-#     G2 = nx.Graph()
-#     num_nodes = G1.number_of_edges()
-#     nodes = range(0, num_nodes*(num_nodes+1)/2)
-#     G2.add_nodes_from(nodes)
-#     for edge in G1.edges():
-#         s, t = edge
-#         for neighbor in range(0, num_nodes):
-#             if neighbor == t:
-#                 pass
-#             elif neighbor == s:
-#                 pass
-#             else:
-#                 pass
 
 def directed_string_graph(G1):
     n = G1.number_of_nodes()
@@ -120,7 +104,7 @@ def directed_string_graph(G1):
     G2 = dgl.add_reverse_edges(G2)
     
     G2.ndata['e'] = torch.tensor(list(edge_id.keys()))
-    # G2.ndata['e'] = torch.tensor(list(edge_id.keys())).clone()
+
     return G2, edge_id
 
 class TSPDataset(torch.utils.data.Dataset):
@@ -182,7 +166,7 @@ class TSPDataset(torch.utils.data.Dataset):
         H.ndata['e'] = self.G.ndata['e'].clone()
         return H
     
-    def get_test_scaled_features_not_samesize_graphs(self, G):
+    def get_test_scaled_features_not_same_size_graphs(self, G):
 
         self.G, self.edge_id = directed_string_graph(G)
         # tranfer to hmogines graph
@@ -200,7 +184,7 @@ class TSPDataset(torch.utils.data.Dataset):
         features = np.vstack(features)
         features_transformed = self.scalers['weight'].transform(features)
         regret = np.vstack(regret)
-        regret_transformed = self.scalers['regret'].transform(regret)        
+        regret_transformed = self.scalers['regret'].transform(regret)    
         in_solution = np.vstack(in_solution)
         
         H = copy.deepcopy(self.G)

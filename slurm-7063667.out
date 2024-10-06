@@ -1,0 +1,7 @@
+device = cuda
+  0%|          | 0/100 [00:00<?, ?it/s]  0%|          | 0/100 [00:13<?, ?it/s]
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 85, in <module>
+    guides=args_test.guides,
+           ^^^^^^^^^^^^^^^^
+AttributeError: 'Namespace' object has no attribute 'guides'
