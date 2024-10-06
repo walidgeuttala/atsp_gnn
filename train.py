@@ -3,6 +3,7 @@
 
 import datetime
 import json
+import os 
 
 import tqdm.auto as tqdm
 import numpy as np
@@ -21,6 +22,7 @@ from args import parse_args
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 # what the fuck is this zed
+
 def epoch_train(model, train_loader, target, criterion, optimizer, device):
     model.train()
 
@@ -61,7 +63,7 @@ def epoch_test(model, data_loader, target, criterion, device):
         
         return epoch_loss
 
-def train(args):
+def train(args, trial_id):
     fix_seed(args.seed)
     # Load dataset
     train_set = datasets.TSPDataset(args.data_dir / 'train.txt')
@@ -166,4 +168,6 @@ def train(args):
 
 if __name__ == "__main__":
     args = parse_args()
-    train(args)
+    os.makedirs(log_dir, exist_ok=True)
+    for _ in range(args.n_trials):
+        train(args)
