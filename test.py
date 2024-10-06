@@ -16,61 +16,10 @@ import tqdm.auto as tqdm
 
 import gnngls
 from gnngls import algorithms, models, datasets
-from atps_to_tsp import TSPExact
-
+from utils import *
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-def add_diag(num_nodes, t1):
-    n = num_nodes
-    t2 = torch.zeros(n, n, dtype=torch.float32)
-    cnt = 0
-    for i in range(n):
-        for j in range(n):
-            if i == j:
-                continue
-            t2[i][j] = t1[cnt]
-            cnt += 1
-    return t2
-
-def correlation_matrix(tensor1, tensor2):
-    
-    # Flatten tensors into 1D arrays
-    flat_tensor1 = tensor1.flatten().numpy()
-    flat_tensor2 = tensor2.flatten().numpy()
-
-    # Concatenate flattened tensors along the second axis
-
-    # Compute the correlation matrix
-    corr_matrix = np.corrcoef(flat_tensor1, flat_tensor2)[0, 1]
-    
-    return corr_matrix
-
-def cosine_similarity(A, B):
-    dot_product = np.dot(A, B)
-    norm_A = np.linalg.norm(A)
-    norm_B = np.linalg.norm(B)
-    similarity = dot_product / (norm_A * norm_B)
-    return similarity
-
-def tsp_to_atsp_instance(G1):
-    num_nodes = G1.number_of_nodes() // 2
-    G2 = nx.DiGraph()
-    G2.add_nodes_from(range(num_nodes))
-    G2.add_edges_from([(u, v) for u in range(num_nodes) for v in range(num_nodes) if u != v])
-
-    first_edge = list(G1.edges)[0]
-
-    # Get the attribute names of the first edge
-    attribute_names = G1[first_edge[0]][first_edge[1]].keys()
-    attribute_names_list = list(attribute_names)
-    for attribute_name in attribute_names_list:
-        attribute, _ = nx.attr_matrix(G1, attribute_name)
-        attribute = attribute[num_nodes:, :num_nodes]
-        for u, v in G2.edges():
-            G2[u][v][attribute_name] = attribute[u, v]
-    
-    return G2
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Test model')
@@ -79,15 +28,13 @@ if __name__ == '__main__':
     parser.add_argument('run_dir', type=pathlib.Path)
     parser.add_argument('guides', type=str, nargs='+')
     parser.add_argument('output_path', type=pathlib.Path)
-    parser.add_argument('--time_limit', type=float, default=10.)
+    parser.add_argument('--time_limit', type=float, default=10.) # time limit is in the seconds
     parser.add_argument('--perturbation_moves', type=int, default=20)
     parser.add_argument('--use_gpu', action='store_true')
     args = parser.parse_args()
     params = json.load(open(args.model_path.parent / 'params.json'))
-    print('before loading graph', flush=True)
 
     test_set = datasets.TSPDataset(args.data_path)
-    print('before loading graph', flush=True)
 
     os.makedirs(args.output_path, exist_ok=True)
     if 'regret_pred' in args.guides:
@@ -124,6 +71,8 @@ if __name__ == '__main__':
     avg_cnt_ans = []
     cnt = 0
     corr_all = 0.
+    total_model_time = 0
+    total_gls_time = 0
     for instance in pbar:
         G = nx.read_gpickle(test_set.root_dir / instance)
         opt_cost = gnngls.optimal_cost(G, weight='weight')
@@ -135,6 +84,7 @@ if __name__ == '__main__':
             'opt_cost': opt_cost
         })
 
+        model_start_time = time.time()
         if 'regret_pred' in args.guides:
             H = test_set.get_test_scaled_features_not_samesize_graphs(G).to(device)
             x = H.ndata['weight']
@@ -148,6 +98,10 @@ if __name__ == '__main__':
         else:
             init_tour = algorithms.nearest_neighbor(G, 0, weight='weight')
 
+        model_time = time.time() - model_start_time
+        total_model_time += model_time
+
+        gls_start_time = time.time()
         num_nodes = len(init_tour) - 1
         init_cost = gnngls.tour_cost(G, init_tour)
         
@@ -156,6 +110,9 @@ if __name__ == '__main__':
                                                                                  guides=args.guides,
                                                                                  perturbation_moves=args.perturbation_moves,
                                                                                  first_improvement=False)
+        
+        gls_time = time.time() - gls_start_time
+
         best_cost2 = gnngls.tour_cost(G, best_tour)
         # for row in search_progress_i:
         #     row.update({
@@ -227,7 +184,8 @@ if __name__ == '__main__':
         args.run_dir.mkdir()
     search_progress_df.to_pickle(args.run_dir / run_name)
 
-
+    print(f"Total time for model prediction: {total_model_time:.4f} seconds")
+    print(f"Total time for guided local search: {total_gls_time:.4f} seconds")
 
 
 
