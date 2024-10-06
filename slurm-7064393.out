@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 147, in <module>
+    print(f"Best Validation Loss : {train(args, trial_id)}")
+                                    ^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 65, in train
+    train_set = datasets.TSPDataset(f'{args.data_dir}/train.txt')
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/datasets.py", line 116, in __init__
+    self.instances = [line.strip() for line in open(instances_file)]
+                                               ^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '../generated_insatnces_3000_size_50/train.txt'

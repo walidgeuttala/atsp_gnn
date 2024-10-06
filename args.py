@@ -3,7 +3,7 @@ import argparse
 def parse_args():
     parser = argparse.ArgumentParser(description='Train/Test model')
     # correct the name of the folder that have the instances insatnces-> instances
-    parser.add_argument('--data_dir', type=str, default='../generated_insatnces_3000_size_50/', help='Dataset directory')
+    parser.add_argument('--data_dir', type=str, default='../tsp_input/generated_insatnces_3000_size_50/', help='Dataset directory')
     parser.add_argument('--tb_dir', type=str, default='../atsp_model_train_result', help='Tensorboard log directory')
 
     # ATSP graph parameters
@@ -26,9 +26,9 @@ def parse_args():
     parser.add_argument('--lr_init', type=float, default=1e-3, help='Initial learning rate')
     parser.add_argument('--lr_decay', type=float, default=0.95, help='Learning rate decay')
     parser.add_argument('--min_delta', type=float, default=1e-4, help='Early stopping min delta')
-    parser.add_argument('--patience', type=int, default=10, help='Early stopping patience')
+    parser.add_argument('--patience', type=int, default=100, help='Early stopping patience')
     parser.add_argument('--batch_size', type=int, default=15, help='Batch size')
-    parser.add_argument('--n_epochs', type=int, default=5, help='Number of epochs')
+    parser.add_argument('--n_epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--checkpoint_freq', type=int, default=10, help='Checkpoint frequency')
     parser.add_argument('--seed', type=int, default=1234, help='Fix the seed of exprs')
     parser.add_argument('--n_trials', type=int, default=1, help='Number of model trials')
