@@ -16,7 +16,7 @@ def parse_args():
     parser.add_argument('--output_dim', type=int, default=1, help='Output feature dimension')
     # In the future activate this so you can choose the type of edges to include in the g2 graph, where g1 -> g2
     # But for now I take it from the dataset and assume it have 5 type edges
-    parser.add_argument('--relation_types', type=str, default='ss st ts tt pp', help='Number of relation types')  
+    parser.add_argument('--relation_types', type=str, default='ss st tt pp', help='Number of relation types')  
     parser.add_argument('--n_gnn_layers', type=int, default=4, help='Number of GNN layers')
     parser.add_argument('--n_heads', type=int, default=64, help='Number of attention heads')
     parser.add_argument('--kj', type=str, default='cat', choices=['cat', 'max'])
@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument('--lr_init', type=float, default=1e-3, help='Initial learning rate')
     parser.add_argument('--lr_decay', type=float, default=0.95, help='Learning rate decay')
     parser.add_argument('--min_delta', type=float, default=1e-4, help='Early stopping min delta')
-    parser.add_argument('--patience', type=int, default=100, help='Early stopping patience')
+    parser.add_argument('--patience', type=int, default=200, help='Early stopping patience')
     parser.add_argument('--batch_size', type=int, default=15, help='Batch size')
     parser.add_argument('--n_epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--checkpoint_freq', type=int, default=10, help='Checkpoint frequency')
@@ -40,12 +40,13 @@ def parse_args():
     args = parser.parse_args()
     
     return args
-
+# trained 100 epochs for good preformance 
+# 5 type edges ../atsp_model_train_result/Oct07_01-45-55_HetroGAT_trained_ATSP50/trial_0
 def parse_args_test():
     parser = argparse.ArgumentParser(description='Test model')
-    parser.add_argument('--atsp_size', type=int, default=150, help="Size of the atsp to be solved")
-    parser.add_argument('--data_path', type=str, default='../tsp_input/generated_insatnces_100_size_150', help='Dataset directory')
-    parser.add_argument('--model_path', default='../atsp_model_train_result/Oct06_23-31-25_HetroGAT_trained_ATSP50/trial_0', type=str)
+    parser.add_argument('--atsp_size', type=int, default=1000, help="Size of the atsp to be solved")
+    parser.add_argument('--data_path', type=str, default='../tsp_input/generated_insatnces_100_size_1000', help='Dataset directory')
+    parser.add_argument('--model_path', default='../atsp_model_train_result/Oct07_21-40-43_HetroGAT_trained_ATSP50/trial_0', type=str)
     parser.add_argument('--time_limit', type=float, default=10., help='Time limit for the 2 opt search in seconds') 
     parser.add_argument('--perturbation_moves', type=int, default=20)
     parser.add_argument('--device', type=str, default='cuda', help="Number of gpu to be used")

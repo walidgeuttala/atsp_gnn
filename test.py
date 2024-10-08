@@ -34,7 +34,7 @@ if __name__ == '__main__':
     os.makedirs(output_path, exist_ok=True)
     args.device = torch.device('cuda' if args.device  == 'cuda' and torch.cuda.is_available() else 'cpu')
     print('device =', args.device)
-
+    print(f'Size of the problem is : {args.atsp_size}')
     model = get_model(args).to(args.device)
 
     checkpoint = torch.load(f'{args_test.model_path}/checkpoint_best_val.pt', map_location=args.device)
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     for instance in pbar:
         G = nx.read_gpickle(test_set.root_dir / instance)
         opt_cost = gnngls.optimal_cost(G, weight='weight')        
-        H = test_set.get_test_scaled_features_not_same_size_graphs(G).to(args.device)
+        H = test_set.get_scaled_features(G).to(args.device)
         x = H.ndata['weight']
         result['model_start_time'] = time.time()
         with torch.no_grad():

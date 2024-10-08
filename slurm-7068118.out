@@ -1,0 +1,28 @@
+Number of nodes: 100
+Number of edges: 9900
+Step: before
+Memory usage RAM: 319.67 MB
+========================================
+1945350
+3890700
+Size of the list: 0.0155635998 GB
+Size of the set: 0.1250002012 GB
+Size of the set: 0.0002747327 GB
+sum all : 0.14083853363990784 GB
+Step: after
+Memory usage RAM: 888.02 MB
+========================================
+Number of nodes: 100
+Number of edges: 9900
+Step: before
+Memory usage RAM: 769.62 MB
+========================================
+1945350
+3890700
+Size of the list: 0.0155635998 GB
+Size of the set: 0.1250002012 GB
+Size of the set: 0.0002747327 GB
+sum all : 0.14083853363990784 GB
+Step: after
+Memory usage RAM: 954.92 MB
+========================================

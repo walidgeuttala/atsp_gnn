@@ -1,0 +1,22 @@
+device = cuda
+  0%|          | 0/100 [00:00<?, ?it/s]Step: before
+Memory usage RAM: 2628.40 MB
+========================================
+30907125
+61814250
+Size of the list: 0.2333657071 GB
+Size of the set: 2.0000002012 GB
+Size of the set: 0.0024414882 GB
+sum all : 2.2358073964715004 GB
+Step: after
+Memory usage RAM: 11525.48 MB
+========================================
+  0%|          | 0/100 [00:45<?, ?it/s]
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 61, in <module>
+    H = test_set.get_test_scaled_features_not_same_size_graphs(G).to(args.device)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/datasets.py", line 308, in get_test_scaled_features_not_same_size_graphs
+    self.G, self.edge_id = directed_string_graph(G)
+    ^^^^^^^^^^^^^^^^^^^^
+TypeError: cannot unpack non-iterable NoneType object

@@ -1,0 +1,20 @@
+Number of nodes: 250
+Number of edges: 62250
+Step: before
+Memory usage RAM: 326.06 MB
+========================================
+30907125
+61814250
+Step: after
+Memory usage RAM: 9248.75 MB
+========================================
+Number of nodes: 250
+Number of edges: 62250
+Step: before
+Memory usage RAM: 2080.62 MB
+========================================
+30907125
+61814250
+Step: after
+Memory usage RAM: 9314.44 MB
+========================================

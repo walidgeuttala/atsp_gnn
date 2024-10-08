@@ -1,0 +1,11 @@
+device = cuda
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 152, in <module>
+    print(f"Best Validation Loss : {train(args, trial_id)}")
+                                    ^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 77, in train
+    model.load_state_dict(checkpoint['model_state_dict'])
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/torch/nn/modules/module.py", line 2153, in load_state_dict
+    raise RuntimeError('Error(s) in loading state_dict for {}:\n\t{}'.format(
+RuntimeError: Error(s) in loading state_dict for HetroGAT:
+	Unexpected key(s) in state_dict: "gnn_layers.0.mods.ts.attn_l", "gnn_layers.0.mods.ts.attn_r", "gnn_layers.0.mods.ts.bias", "gnn_layers.0.mods.ts.fc.weight", "gnn_layers.1.mods.ts.attn_l", "gnn_layers.1.mods.ts.attn_r", "gnn_layers.1.mods.ts.bias", "gnn_layers.1.mods.ts.fc.weight", "gnn_layers.2.mods.ts.attn_l", "gnn_layers.2.mods.ts.attn_r", "gnn_layers.2.mods.ts.bias", "gnn_layers.2.mods.ts.fc.weight", "gnn_layers.3.mods.ts.attn_l", "gnn_layers.3.mods.ts.attn_r", "gnn_layers.3.mods.ts.bias", "gnn_layers.3.mods.ts.fc.weight". 

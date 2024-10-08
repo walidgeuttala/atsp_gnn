@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 152, in <module>
+    print(f"Best Validation Loss : {train(args, trial_id)}")
+                                    ^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 65, in train
+    train_set = datasets.TSPDataset(f'{args.data_dir}/train.txt')
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/datasets.py", line 266, in __init__
+    self.G, self.edge_id = optimized_line_graph(G)
+                           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/datasets.py", line 155, in optimized_line_graph
+    g2 = dgl.heterograph(edge_types)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/dgl/convert.py", line 332, in heterograph
+    (sparse_fmt, arrays), urange, vrange = utils.graphdata2tensors(
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/dgl/utils/data.py", line 223, in graphdata2tensors
+    raise DGLError("Unsupported graph data type:", type(data))
+dgl._ffi.base.DGLError: ('Unsupported graph data type:', <class 'torch.Tensor'>)
