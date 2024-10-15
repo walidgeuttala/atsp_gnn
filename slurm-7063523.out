@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 28, in <module>
-    params = json.load(open(args_test.model_path.parent / 'params.json'))
-                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'str' object has no attribute 'parent'

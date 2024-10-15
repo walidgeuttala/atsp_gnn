@@ -1,6 +1,0 @@
-device = cuda
-  0%|          | 0/100 [00:00<?, ?it/s]Step: before
-Memory usage RAM: 5385.16 MB
-========================================
-/scratch/slurm/SlurmdSpoolDir/x1001c3s1b0n1/job7071568/slurm_script: line 43: 4108991 Killed                  python test.py
-slurmstepd: error: Detected 1 oom-kill event(s) in StepId=7071568.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.

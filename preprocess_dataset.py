@@ -14,9 +14,9 @@ from sklearn.preprocessing import MinMaxScaler
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Preprocess a dataset.')
     parser.add_argument('dir', type=pathlib.Path)
-    parser.add_argument('--n_train', type=int, default=2500)
-    parser.add_argument('--n_test', type=int, default=250)
-    parser.add_argument('--n_val', type=int, default=250)
+    parser.add_argument('--n_train', type=int, default=30)
+    parser.add_argument('--n_test', type=int, default=30)
+    parser.add_argument('--n_val', type=int, default=30)
     args = parser.parse_args()
 
     # if (args.dir / 'scalers.pkl').is_file():
@@ -30,8 +30,8 @@ if __name__ == '__main__':
     random.shuffle(instances)
 
     train_set = instances[:args.n_train]
-    test_set = instances[args.n_train:args.n_train+args.n_test]
-    val_set = instances[args.n_train:args.n_train+args.n_test]
+    test_set = instances[:args.n_train]
+    val_set = instances[:args.n_train]
 
     for data_set, file_name in zip([train_set, val_set, test_set], ['train.txt', 'val.txt', 'test.txt']):
         with open(args.dir / file_name, 'w') as data_file:

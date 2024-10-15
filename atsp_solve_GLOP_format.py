@@ -80,51 +80,54 @@ def list_files_in_directory(directory_path):
 
 
 
+def main(n , samples):
 
-# Solve for 3000 instances
-samples_to_solve = 100
-n = 1000
+    # Path variables
+    output_dir = f"../tsp_input/atsp_{n}_samples_{samples}_solved_test_only"
 
-# Path variables
-output_dir = f"atsp_{n}_solved_test_only"
+    # Create output directory if not exists
+    os.makedirs(output_dir, exist_ok=True)
 
-# Create output directory if not exists
-os.makedirs(output_dir, exist_ok=True)
+    dataset = torch.load(f'../GLOP/data/atsp/ATSP{n}.pt')
+    #samples = dataset.shape[0]
+    tour_simple = list(range(n)) + [0]
 
-dataset = torch.load(f'../GLOP/data/atsp/ATSP{n}.pt')
-#samples_to_solve = dataset.shape[0]
-tour_simple = list(range(n)) + [0]
-
-# Process each file and solve
-for i in range(samples_to_solve):
-    # Load the dataset
-   
-    adjacency_matrix = dataset[i]
-    string_problem = create_tsplib95_string(adjacency_matrix.numpy()*1e6)
-    # Measure time for solving the first instance for estimation
-    if i == 0:
-        start_time = time.time()
-
-    # Solve the problem using LKH
-    tour = fixed_edge_tour(string_problem)
-    cost = compute_tour_cost(tour, adjacency_matrix)
-    cost_simple = compute_tour_cost(tour_simple, adjacency_matrix)
-    print(f'tour : {len(tour)}',flush=True)
-    if i == 0:
-        elapsed_time = time.time() - start_time
-        estimated_total_time = elapsed_time * samples_to_solve
-        print(f"Time for first sample: {elapsed_time:.2f} seconds", flush=True)
-        print(f"Estimated time for {samples_to_solve} samples: {estimated_total_time / 60:.2f} minutes", flush=True)
-
-    # Save the result in the output directory
-    output_file = os.path.join(output_dir, f"solved_instance_{i}.json")
+    # Process each file and solve
+    for i in range(samples):
+        # Load the dataset
     
-    with open(output_file, 'w') as file:
-        result = {
-            "adjacency_matrix": adjacency_matrix.tolist(),
-            "tour": tour,
-            "cost": cost.item()
-        }
-        json.dump(result, file)
+        adjacency_matrix = dataset[i]
+        string_problem = create_tsplib95_string(adjacency_matrix.numpy()*1e6)
+        # Measure time for solving the first instance for estimation
+        if i == 0:
+            start_time = time.time()
 
-    print(f"Instance {i+1}/{samples_to_solve} solved. Cost: {cost}, Cost Simple : {cost_simple}", flush=True)
+        # Solve the problem using LKH
+        tour = fixed_edge_tour(string_problem)
+        cost = compute_tour_cost(tour, adjacency_matrix)
+        cost_simple = compute_tour_cost(tour_simple, adjacency_matrix)
+        print(f'tour : {len(tour)}',flush=True)
+        if i == 0:
+            elapsed_time = time.time() - start_time
+            estimated_total_time = elapsed_time * samples
+            print(f"Time for first sample: {elapsed_time:.2f} seconds", flush=True)
+            print(f"Estimated time for {samples} samples: {estimated_total_time / 60:.2f} minutes", flush=True)
+
+        # Save the result in the output directory
+        output_file = os.path.join(output_dir, f"solved_instance_{i}.json")
+        
+        with open(output_file, 'w') as file:
+            result = {
+                "adjacency_matrix": adjacency_matrix.tolist(),
+                "tour": tour,
+                "cost": cost.item()
+            }
+            json.dump(result, file)
+
+        print(f"Instance {i+1}/{samples} solved. Cost: {cost}, Cost Simple : {cost_simple}", flush=True)
+
+if __name__ == '__main__':
+    atsp_sizes = [100, 150, 250, 500, 1000]
+    samples = 30
+    for n in atsp_sizes:
+        main(n, samples)

@@ -1,4 +1,3 @@
-import copy
 import pathlib
 import pickle
 import psutil 
@@ -54,14 +53,22 @@ def log_memory_usage(step_description):
     print(f"Cached memory: {torch.cuda.memory_reserved() / 1024**2:.2f} MB", flush=True)
     print("=" * 40, flush=True)
 
-def optimized_line_graph(g):
+def optimized_line_graph(g, args):
     n = g.number_of_nodes()
     m1 = n*(n-1)*(n-2)//2
     m2 = n*(n-1)//2
-    ss = torch.empty((m1, 2), dtype=torch.int32)
-    st = torch.empty((m1, 2), dtype=torch.int32)
-    tt = torch.empty((m1, 2), dtype=torch.int32)
-    pp = torch.empty((m2, 2), dtype=torch.int32)
+    if 'ss' in args.relation_types:
+        ss = torch.empty((m1, 2), dtype=torch.int32)
+    if 'st' in args.relation_types:
+        if args.half_st:
+            st = torch.empty((m1, 2), dtype=torch.int32)
+        else:
+            st = torch.empty((m1*2, 2), dtype=torch.int32)
+    if 'tt' in args.relation_types:
+        tt = torch.empty((m1, 2), dtype=torch.int32)
+    if 'pp' in args.relation_types:
+        pp = torch.empty((m2, 2), dtype=torch.int32)
+
     edge_id = {edge: idx for idx, edge in enumerate(g.edges())}
     idx = 0
     idx2 = 0
@@ -70,113 +77,43 @@ def optimized_line_graph(g):
             if x != y:
                 for z in range(y+1, n):
                     if x != z:
-                        ss[idx] = torch.tensor([edge_id[(x, y)], edge_id[(x, z)]], dtype=torch.int32)
-                        st[idx] = torch.tensor([edge_id[(x, y)], edge_id[(z, x)]], dtype=torch.int32)
-                        tt[idx] = torch.tensor([edge_id[(y, x)], edge_id[(z, x)]], dtype=torch.int32)
+                        if 'ss' in args.relation_types:
+                            ss[idx] = torch.tensor([edge_id[(x, y)], edge_id[(x, z)]], dtype=torch.int32)
+                        if 'st' in args.relation_types:
+                            if args.half_st:
+                                st[idx] = torch.tensor([edge_id[(x, y)], edge_id[(z, x)]], dtype=torch.int32)
+                            else:
+                                st[idx*2] = torch.tensor([edge_id[(x, y)], edge_id[(z, x)]], dtype=torch.int32)
+                                st[idx*2+1] = torch.tensor([edge_id[(y, x)], edge_id[(x, z)]], dtype=torch.int32)
+                        if 'tt' in args.relation_types:
+                            tt[idx] = torch.tensor([edge_id[(y, x)], edge_id[(z, x)]], dtype=torch.int32)
                         idx += 1
-        for y in range(x+1, n):
-            pp[idx2] = torch.tensor([edge_id[(x, y)], edge_id[(y, x)]], dtype=torch.int32)
-            idx2 += 1
-    edge_types = {
-        ('node1', 'ss', 'node1'): (ss[:, 0], ss[:, 1]),
-        ('node1', 'st', 'node1'): (st[:, 0], st[:, 1]),
-        ('node1', 'tt', 'node1'): (tt[:, 0], tt[:, 1]),
-        ('node1', 'pp', 'node1'): (pp[:, 0], pp[:, 1])
-        }
+        if 'pp' in args.relation_types:
+            for y in range(x+1, n):
+                pp[idx2] = torch.tensor([edge_id[(x, y)], edge_id[(y, x)]], dtype=torch.int32)
+                idx2 += 1
+    edge_types = {}
 
+    if 'ss' in args.relation_types:
+        edge_types[('node1', 'ss', 'node1')] = (ss[:, 0], ss[:, 1])
+    if 'st' in args.relation_types:
+        edge_types[('node1', 'st', 'node1')] = (st[:, 0], st[:, 1])
+    if 'tt' in args.relation_types:
+        edge_types[('node1', 'tt', 'node1')] = (tt[:, 0], tt[:, 1])
+    if 'pp' in args.relation_types:
+        edge_types[('node1', 'pp', 'node1')] = (pp[:, 0], pp[:, 1])
+
+  
     g2 = dgl.heterograph(edge_types)
+
     g2 = dgl.add_reverse_edges(g2)
 
     g2.ndata['e'] = torch.tensor(list(edge_id.keys()))
 
-    return g2, edge_id
-
-def directed_string_graph(G1):
-    n = G1.number_of_nodes()
-    m = n*(n-1)
-
-    i, j = 0, 1
-    ss = []
-    st = []
-    ts = []
-    tt = []
-    pp = []
-    log_memory_usage2('before')
-    edge_id = {edge: idx for idx, edge in enumerate(G1.edges())}
-
-    set_list = set()
-    for idx in range(m):
-        # parallel
-        if (i, j, j, i) not in set_list:
-            set_list.add((i, j, j, i))
-            set_list.add((j, i, i, j))
-            pp.append((edge_id[(i, j)], edge_id[(j, i)]))
-        # src to src
-        for v in range(n):
-            if v != i and v != j and (i, j, i, v) not in set_list:
-                set_list.add((i, j, i, v))
-                set_list.add((i, v, i, j))
-                ss.append((edge_id[(i, j)], edge_id[(i, v)]))
-        # src to target
-        for v in range(n):
-            if v != i and v != j and (i, j, v, i) not in set_list:
-                set_list.add((i, j, v, i))
-                set_list.add((v, i, i, j))
-                st.append((edge_id[(i, j)], edge_id[(v, i)]))
-        # target to src
-        for v in range(n):
-            if v != i and v != j and (i, j, j, v) not in set_list:
-                set_list.add((i, j, j, v))
-                set_list.add((j, v, i, j))
-                ts.append((edge_id[(i, j)], edge_id[(j, v)]))
-        # target to target
-        for v in range(n):
-            if v != i and v != j and (i, j, v, j) not in set_list:
-                set_list.add((i, j, v, j))
-                set_list.add((v, j, i, j))
-                tt.append((edge_id[(i, j)], edge_id[(v, j)]))
-        
-        j += 1
-        if i == j:
-            j += 1
-        if j == n:
-            j = 0
-            i += 1
-
-    edge_types = {('node1', 'ss', 'node1'): ss,
-              ('node1', 'st', 'node1'): st,
-              ('node1', 'ts', 'node1'): ts,
-               ('node1', 'tt', 'node1'): tt,
-               ('node1', 'pp', 'node1'): pp}
-    
-    
-
-     
-    import sys
-    # # G2 = dgl.heterograph(edge_types)
-    # # G2 = dgl.add_reverse_edges(G2)
-    print(len(ss)+len(st)+len(ts)+len(tt)+len(pp))
-    print(len(set_list))
-    list_size_bytes = sys.getsizeof(ss)+sys.getsizeof(st)+sys.getsizeof(ts)+sys.getsizeof(tt)+sys.getsizeof(pp)
-    set_size_bytes = sys.getsizeof(set_list)
-    dict_size_bytes = sys.getsizeof(edge_id)
-
-    list_size_gb = list_size_bytes / (1024 ** 3)  # 1 GB = 1024^3 bytes
-    set_size_gb = set_size_bytes / (1024 ** 3)
-    
-    dict_size_gb = dict_size_bytes / (1024 ** 3)
-    # Print the sizes
-    print(f"Size of the list: {list_size_gb:.10f} GB")
-    print(f"Size of the set: {set_size_gb:.10f} GB")
-    print(f"Size of the set: {dict_size_gb:.10f} GB")
-    sum_size = dict_size_gb+set_size_gb+list_size_gb
-    print(f'sum all : {sum_size} GB')
-    # G2.ndata['e'] = torch.tensor(list(edge_id.keys()))
-    log_memory_usage2('after')
-    
+    return g2, edge_id    
 
 class TSPDataset(torch.utils.data.Dataset):
-    def __init__(self, instances_file, scalers_file=None, feat_drop_idx=[]):
+    def __init__(self, instances_file, args, scalers_file=None):
         if not isinstance(instances_file, pathlib.Path):
             instances_file = pathlib.Path(instances_file)
         self.root_dir = instances_file.parent
@@ -191,13 +128,13 @@ class TSPDataset(torch.utils.data.Dataset):
         else:
             self.scalers = scalers
 
-        self.feat_drop_idx = feat_drop_idx
-
-        # only works for homogenous datasets
         G = nx.read_gpickle(self.root_dir / self.instances[0])
-        self.G, self.edge_id = optimized_line_graph(G)
-        # tranfer to hmogines graph
-        # self.G = dgl.to_homogeneous(self.G, ndata=['e'])
+        self.G, self.edge_id = optimized_line_graph(G, args)
+
+        # Transfer the Hetro to Homo
+        if args.to_homo:
+            self.G = dgl.to_homogeneous(self.G, ndata=['e'])
+
         self.etypes = self.G.etypes
 
     def __len__(self):

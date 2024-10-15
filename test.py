@@ -28,15 +28,16 @@ if __name__ == '__main__':
     params = json.load(open(f'{args_test.model_path}/params.json'))
     args = parse_args()
     args = load_params(args, params)
+    print(args)
+    print(args_test)
     
-    test_set = datasets.TSPDataset(f'{args_test.data_path}/test.txt')
+    test_set = datasets.TSPDataset(f'{args_test.data_path}/test.txt', args)
     output_path = f'{args_test.model_path}/trial_0/test_atsp{args_test.atsp_size}'
     os.makedirs(output_path, exist_ok=True)
     args.device = torch.device('cuda' if args.device  == 'cuda' and torch.cuda.is_available() else 'cpu')
     print('device =', args.device)
-    print(f'Size of the problem is : {args.atsp_size}')
+    print(f'model: {args.model} trained in ATSP{args.atsp_size} for {args.n_epochs} and tested in ATSP{args_test.atsp_size} for {len(test_set.instances)}')
     model = get_model(args).to(args.device)
-
     checkpoint = torch.load(f'{args_test.model_path}/checkpoint_best_val.pt', map_location=args.device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
@@ -131,7 +132,13 @@ if __name__ == '__main__':
                 'Avg_Otpimal_best:': '{:.4f}'.format(np.mean(result['opt_costs'])),
                 'Avg_counts: ': '{:.4f}'.format(np.mean(result['avg_cnt_search'])),
             })
-        
+    # Add the Average of such list key values
+    keys = list(result.keys())
+    for key in keys:
+        if isinstance(result[key], list) and result[key]:  # Check if the value is a non-empty list
+            avg_value = sum(result[key]) / len(result[key])  # Calculate the average
+            result[f'avg_{key}'] = avg_value  # Add new key with average
+
     with open(f'{output_path}/results.json', 'w') as json_file:
         json.dump(result, json_file, indent=4)
 

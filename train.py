@@ -59,11 +59,13 @@ def epoch_test(model, data_loader, criterion, device):
         
         return epoch_loss
 
-def train(args, trial_id):
+def train(args, trial_id, run_name=None):
+    args.device = 'cuda'
+    print(args)
     fix_seed(args.seed)
     # Load dataset
-    train_set = datasets.TSPDataset(f'{args.data_dir}/train.txt')
-    val_set = datasets.TSPDataset(f'{args.data_dir}/val.txt')
+    train_set = datasets.TSPDataset(f'{args.data_dir}/train.txt', args)
+    val_set = datasets.TSPDataset(f'{args.data_dir}/val.txt', args)
 
     # use GPU if it is available
     args.device = torch.device('cuda' if args.device  == 'cuda' and torch.cuda.is_available() else 'cpu')
@@ -81,56 +83,75 @@ def train(args, trial_id):
                             num_workers=4, pin_memory=True)
 
     timestamp = datetime.datetime.now().strftime('%b%d_%H-%M-%S')
-    run_name = f'{timestamp}_{args.model}_trained_ATSP{args.atsp_size}'
+    if run_name == None:
+        run_name = f'{timestamp}_{args.model}_trained_ATSP{args.atsp_size}'
     os.makedirs(f'{args.tb_dir}/{run_name}', exist_ok=True)
     log_dir = f'{args.tb_dir}/{run_name}/trial_{str(trial_id)}'
     os.makedirs(log_dir, exist_ok=True)
-    writer = SummaryWriter(log_dir)
+    
+    output_file_path = f'{log_dir}/train_logs.txt'
+    max_line_length = 50
 
+    with open(output_file_path, 'a') as file:
+        file.write('args = { \n')
+
+        for key, value in vars(args).items():
+            line = f'{key}: {value}'
+            while len(line) > max_line_length:
+                file.write(line[:max_line_length] + '\n')
+                line = line[max_line_length:]
+            file.write(line + '\n')
+        file.write('} \n\n')
     pbar = tqdm.trange(args.n_epochs)
     
     result = dict()
-    result['min_val_loss'] = torch.tensor(float(1e6))
     result['train_loss'] = torch.empty((args.n_epochs), dtype=torch.float)
     result['val_loss'] = torch.empty((args.n_epochs), dtype=torch.float)
     # early stopping
-    result['best_score'] = None
+    result['min_val_loss'] = None
+    result['min_avg_gap'] = None
     result['counter'] = 0
+    ordered_keys = ['epoch', 'train_loss', 'val_loss', 'avg_gap', 'avg_init_cost', 'avg_opt_cost', 'avg_corr', 'avg_corr_cosin']
+
 
     for epoch in pbar:
         result['train_loss'][epoch] = epoch_train(model, train_loader, criterion, optimizer, args.device)
         result['val_loss'][epoch] = epoch_test(model, val_loader, criterion, args.device)
-        
         result2 = atsp_results(model, args, val_set)
         
-        for key, value in result2.items():
-            writer.add_scalar(key, value, global_step=epoch) 
-
-        result['min_val_loss'] = torch.min(result['min_val_loss'], result['val_loss'][epoch])
-
         formatted_result = {key: f'{(value/args.n_samples_result_train):.4f}' for key, value in result2.items()}  # Format values to 4 decimal places
+        formatted_result['train_loss'] = f'{result['train_loss'][epoch]:.4f}'
+        formatted_result['val_loss'] = f'{result['val_loss'][epoch]:.4f}'
+        formatted_result['epoch'] = f'{epoch:.4f}'
         pbar.set_postfix(**formatted_result) 
-                
+        # Create the formatted string in the specified order
+        formatted_result_str = ' '.join([f'{key}: {formatted_result[key]}' for key in ordered_keys if key in formatted_result])
+        with open(output_file_path, 'a') as file:
+            file.write(formatted_result_str + '\n')
         # Saving the model
         if args.checkpoint_freq is not None and epoch > 0 and epoch % args.checkpoint_freq == 0:
             checkpoint_name = f'checkpoint_{epoch}.pt'
             save(model, optimizer, epoch, result['train_loss'][epoch], result['val_loss'][epoch], f'{log_dir}/{checkpoint_name}')
 
-        if result['best_score'] is None or result['val_loss'][epoch] < result['best_score'] - args.min_delta:
+        if result['min_avg_gap'] is None or result2['avg_gap'] < result['min_avg_gap']:
+            save(model, optimizer, epoch, result['train_loss'][epoch], result['val_loss'][epoch], f'{log_dir}/checkpoint_best_avg_gap.pt')
+            result['min_avg_gap'] = result2['avg_gap']
+            best_avg_gap_result = formatted_result.copy()
+        if result['min_val_loss'] is None or result['val_loss'][epoch] < result['min_val_loss'] - args.min_delta:
             save(model, optimizer, epoch, result['train_loss'][epoch], result['val_loss'][epoch], f'{log_dir}/checkpoint_best_val.pt')
-            result['best_score'] = result['val_loss'][epoch]
+            result['min_val_loss'] = result['val_loss'][epoch]
             result['counter'] = 0
+            best_val_result = formatted_result.copy()
         else:
             result['counter'] += 1
+
         
         if result['counter'] >= args.patience:
             pbar.close()
             break
 
         lr_scheduler.step()
-
-    writer.close()
-
+    
     params = dict(vars(args))
     params['device'] = str(args.device)  # Convert device to a string
 
@@ -138,10 +159,37 @@ def train(args, trial_id):
 
     save(model, optimizer, epoch, result['train_loss'][epoch], result['val_loss'][epoch], f'{log_dir}/checkpoint_final.pt')
     
-    return result['min_val_loss']
+    return best_val_result, best_avg_gap_result, run_name
 
 if __name__ == "__main__":
     args = parse_args()
     os.makedirs(args.tb_dir, exist_ok=True)
+    run_name = None
+    list_best_val_result = []
+    list_best_avg_gap_result = []
     for trial_id in range(args.n_trials):
-        print(f"Best Validation Loss : {train(args, trial_id)}")
+        best_val_result, best_avg_gap_result, run_name = train(args, trial_id, run_name)
+        print('Best validation result')
+        for key, value in best_val_result.items():
+            print(f'{key} {value}', end=' ')  
+        print('\n') 
+        print('Best average gap result')
+        for key, value in best_avg_gap_result.items():
+            print(f'{key} {value}', end=' ')  
+        print('\n') 
+        list_best_val_result.append(best_val_result)
+        list_best_avg_gap_result.append(best_avg_gap_result)
+        args.seed += 1
+
+    if args.n_trials > 1:
+        keys = list_best_val_result[0].keys()
+
+        tensor_best_val_result = {key: torch.tensor([float(d[key]) for d in list_best_val_result], dtype=torch.float32) for key in keys}
+        tensor_best_avg_gap_result = {key: torch.tensor([float(d[key]) for d in list_best_avg_gap_result], dtype=torch.float32) for key in keys}
+        stats_best_val_result = calculate_statistics(tensor_best_val_result)
+        stats_best_avg_gap_result = calculate_statistics(tensor_best_avg_gap_result)
+        log_dir = f'{args.tb_dir}/{run_name}'
+        torch.save(tensor_best_val_result, f'{log_dir}/tensor_best_val_result.pt')
+        torch.save(tensor_best_avg_gap_result, f'{log_dir}/tensor_best_avg_gap_result.pt')
+        print(stats_best_val_result)
+        print(stats_best_avg_gap_result)

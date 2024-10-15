@@ -1,9 +1,0 @@
-Step: before creating the transfromation CPU
-Memory usage RAM: 698.00 MB
-========================================
-Step: before creating the transfromation CPU
-Allocated memory GPU: 0.00 MB
-Cached memory: 0.00 MB
-========================================
-/scratch/slurm/SlurmdSpoolDir/x1001c1s2b0n1/job7065891/slurm_script: line 43: 355773 Killed                  python test.py
-slurmstepd: error: Detected 1 oom-kill event(s) in StepId=7065891.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.

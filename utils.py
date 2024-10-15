@@ -7,7 +7,18 @@ import dgl
 import gnngls
 from gnngls import algorithms
 
-
+def calculate_statistics(tensors):
+    stats = {}
+    for key, values in tensors.items():
+        stats[key] = {
+            'mean': torch.mean(values).item(),
+            'min': torch.min(values).item(),
+            'max': torch.max(values).item(),
+            'q1': torch.quantile(values, 0.25).item(),
+            'median': torch.median(values).item(),
+            'q3': torch.quantile(values, 0.75).item()
+        }
+    return stats
 
 def atsp_results(model, args, val_set):
     result2 = dict()

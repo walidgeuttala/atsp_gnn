@@ -1,7 +1,0 @@
-device = cuda
-  0%|          | 0/100 [00:00<?, ?it/s]  0%|          | 0/100 [00:00<?, ?it/s]
-Traceback (most recent call last):
-  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 66, in <module>
-    H = test_set.get_test_scaled_features_not_same_size_graphs(G).to(args.device)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'TSPDataset' object has no attribute 'get_test_scaled_features_not_same_size_graphs'

@@ -1,30 +1,0 @@
-device = cuda
-  0%|          | 0/100 [00:00<?, ?it/s]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
-  c /= stddev[:, None]
-/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
-  c /= stddev[None, :]
-  0%|          | 0/100 [00:12<?, ?it/s, Sum GNN time:=10.9613, Sum Search time:=0.5893, Avg Gap init:=24.7223, Avg Gap best:=17.9976, Avg Cost init:=1.7759, Avg Cost best:=1.6801, Avg Otpimal best:=1.4238, Avg counts =32.0000]  1%|          | 1/100 [00:12<19:50, 12.03s/it, Sum GNN time:=10.9613, Sum Search time:=0.5893, Avg Gap init:=24.7223, Avg Gap best:=17.9976, Avg Cost init:=1.7759, Avg Cost best:=1.6801, Avg Otpimal best:=1.4238, Avg counts =32.0000]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
-  c /= stddev[:, None]
-/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
-  c /= stddev[None, :]
-  1%|          | 1/100 [00:28<19:50, 12.03s/it, Sum GNN time:=26.1709, Sum Search time:=1.4287, Avg Gap init:=19.3663, Avg Gap best:=14.9176, Avg Cost init:=1.8270, Avg Cost best:=1.7612, Avg Otpimal best:=1.5356, Avg counts =24.0000]  2%|▏         | 2/100 [00:28<24:13, 14.83s/it, Sum GNN time:=26.1709, Sum Search time:=1.4287, Avg Gap init:=19.3663, Avg Gap best:=14.9176, Avg Cost init:=1.8270, Avg Cost best:=1.7612, Avg Otpimal best:=1.5356, Avg counts =24.0000]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
-  c /= stddev[:, None]
-/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
-  c /= stddev[None, :]
-  2%|▏         | 2/100 [00:42<24:13, 14.83s/it, Sum GNN time:=39.1648, Sum Search time:=1.8702, Avg Gap init:=18.8285, Avg Gap best:=14.3796, Avg Cost init:=1.8634, Avg Cost best:=1.7952, Avg Otpimal best:=1.5718, Avg counts =24.0000]  3%|▎         | 3/100 [00:42<23:18, 14.42s/it, Sum GNN time:=39.1648, Sum Search time:=1.8702, Avg Gap init:=18.8285, Avg Gap best:=14.3796, Avg Cost init:=1.8634, Avg Cost best:=1.7952, Avg Otpimal best:=1.5718, Avg counts =24.0000]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
-  c /= stddev[:, None]
-/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
-  c /= stddev[None, :]
-  3%|▎         | 3/100 [00:55<23:18, 14.42s/it, Sum GNN time:=49.6559, Sum Search time:=2.9068, Avg Gap init:=19.1712, Avg Gap best:=14.8634, Avg Cost init:=1.8599, Avg Cost best:=1.7938, Avg Otpimal best:=1.5635, Avg counts =23.0000]  4%|▍         | 4/100 [00:55<21:42, 13.57s/it, Sum GNN time:=49.6559, Sum Search time:=2.9068, Avg Gap init:=19.1712, Avg Gap best:=14.8634, Avg Cost init:=1.8599, Avg Cost best:=1.7938, Avg Otpimal best:=1.5635, Avg counts =23.0000]/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2897: RuntimeWarning: invalid value encountered in divide
-  c /= stddev[:, None]
-/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/numpy/lib/function_base.py:2898: RuntimeWarning: invalid value encountered in divide
-  c /= stddev[None, :]
-  4%|▍         | 4/100 [01:07<21:42, 13.57s/it, Sum GNN time:=61.0187, Sum Search time:=3.2110, Avg Gap init:=19.2934, Avg Gap best:=15.7431, Avg Cost init:=1.8439, Avg Cost best:=1.7895, Avg Otpimal best:=1.5480, Avg counts =21.6000]  5%|▌         | 5/100 [01:07<20:43, 13.09s/it, Sum GNN time:=61.0187, Sum Search time:=3.2110, Avg Gap init:=19.2934, Avg Gap best:=15.7431, Avg Cost init:=1.8439, Avg Cost best:=1.7895, Avg Otpimal best:=1.5480, Avg counts =21.6000]  5%|▌         | 5/100 [01:17<24:25, 15.43s/it, Sum GNN time:=61.0187, Sum Search time:=3.2110, Avg Gap init:=19.2934, Avg Gap best:=15.7431, Avg Cost init:=1.8439, Avg Cost best:=1.7895, Avg Otpimal best:=1.5480, Avg counts =21.6000]
-Traceback (most recent call last):
-  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 83, in <module>
-    best_tour, best_cost, search_progress_i, cnt_ans = algorithms.guided_local_search(G, init_tour, init_cost,
-                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/algorithms.py", line 166, in guided_local_search
-    util = G[e[0]][e[1]][guide] / (1 + G[e[0]][e[1]]['penalty'])
-           ~~~~~~~~~~~~~^^^^^^^
-KeyError: 'r'

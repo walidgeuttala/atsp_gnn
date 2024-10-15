@@ -1,20 +1,0 @@
-device = cuda
-  0%|          | 0/2 [00:00<?, ?it/s]  0%|          | 0/2 [00:31<?, ?it/s, avg_corr=0.7675, avg_corr_cosin=0.9648, avg_gap=23.9575, avg_init_cost=2025327.2000, avg_opt_cost=1635774.5000] 50%|█████     | 1/2 [00:31<00:31, 31.19s/it, avg_corr=0.7675, avg_corr_cosin=0.9648, avg_gap=23.9575, avg_init_cost=2025327.2000, avg_opt_cost=1635774.5000] 50%|█████     | 1/2 [01:00<00:31, 31.19s/it, avg_corr=0.8414, avg_corr_cosin=0.9745, avg_gap=16.4734, avg_init_cost=1907227.6000, avg_opt_cost=1635774.5000]100%|██████████| 2/2 [01:00<00:00, 30.24s/it, avg_corr=0.8414, avg_corr_cosin=0.9745, avg_gap=16.4734, avg_init_cost=1907227.6000, avg_opt_cost=1635774.5000]100%|██████████| 2/2 [01:00<00:00, 30.38s/it, avg_corr=0.8414, avg_corr_cosin=0.9745, avg_gap=16.4734, avg_init_cost=1907227.6000, avg_opt_cost=1635774.5000]
-Traceback (most recent call last):
-  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 145, in <module>
-    print(f"Best Validation Loss : {train(args, trial_id)}")
-                                    ^^^^^^^^^^^^^^^^^^^^^
-  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 135, in train
-    json.dump(params, open(f'{log_dir}/params.json', 'w'))
-  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/json/__init__.py", line 179, in dump
-    for chunk in iterable:
-  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/json/encoder.py", line 432, in _iterencode
-    yield from _iterencode_dict(o, _current_indent_level)
-  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/json/encoder.py", line 406, in _iterencode_dict
-    yield from chunks
-  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/json/encoder.py", line 439, in _iterencode
-    o = _default(o)
-        ^^^^^^^^^^^
-  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/json/encoder.py", line 180, in default
-    raise TypeError(f'Object of type {o.__class__.__name__} '
-TypeError: Object of type device is not JSON serializable

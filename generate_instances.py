@@ -17,7 +17,7 @@ import linecache
 
 def prepare_instance(G):
     datasets.set_features(G)
-    datasets.set_labels(G)
+    datasets.set_labels2(G)
     return G
 
 def get_solved_instances(n_nodes, n_instances):
@@ -132,7 +132,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate a dataset.')
     parser.add_argument('n_samples', type=int)
     parser.add_argument('n_nodes', type=int)
-    parser.add_argument('input_file', type=str)
+    parser.add_argument('input_dir', type=str)
     parser.add_argument('output_dir', type=pathlib.Path)
     args = parser.parse_args()
 
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     pool = mp.Pool(processes=None)
-    instance_gen = get_solved_instances3(args.n_nodes, args.n_samples, args.input_file)
+    instance_gen = get_solved_instances3(args.n_nodes, args.n_samples, args.input_dir)
     # Process and save instances
     try:
         for G in pool.imap_unordered(prepare_instance, instance_gen):

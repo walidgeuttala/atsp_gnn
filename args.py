@@ -8,19 +8,18 @@ def parse_args():
 
     # ATSP graph parameters
     parser.add_argument('--atsp_size', type=int, default=50, help="Size of the atsp to be solved")
+    parser.add_argument('--to_homo', type=bool, default=True, help="tranfer the pre-processed graph into homogines")
+    parser.add_argument('--half_st', type=bool, default=False, help="add only source target graph half of it, ")
 
     # Model parameters
-    parser.add_argument('--model', type=str, default='HetroGAT', help='set the model name to use')
+    parser.add_argument('--model', type=str, default='EdgePropertyPredictionModel3', help='set the model name to use')
     parser.add_argument('--input_dim', type=int, default=1, help='Input feature dimension')
     parser.add_argument('--hidden_dim', type=int, default=128, help='Hidden feature dimension')
     parser.add_argument('--output_dim', type=int, default=1, help='Output feature dimension')
-    # In the future activate this so you can choose the type of edges to include in the g2 graph, where g1 -> g2
-    # But for now I take it from the dataset and assume it have 5 type edges
     parser.add_argument('--relation_types', type=str, default='ss st tt pp', help='Number of relation types')  
     parser.add_argument('--n_gnn_layers', type=int, default=4, help='Number of GNN layers')
     parser.add_argument('--n_heads', type=int, default=64, help='Number of attention heads')
-    parser.add_argument('--kj', type=str, default='cat', choices=['cat', 'max'])
-    parser.add_argument('--aggregate', type=str, default='sum', choices=['cat', 'sum'])
+    parser.add_argument('--jk', type=str, default='cat', choices=['cat'])
 
     # Hyper-parameter about the training/testing
     parser.add_argument('--lr_init', type=float, default=1e-3, help='Initial learning rate')
@@ -30,9 +29,9 @@ def parse_args():
     parser.add_argument('--batch_size', type=int, default=15, help='Batch size')
     parser.add_argument('--n_epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--checkpoint_freq', type=int, default=10, help='Checkpoint frequency')
-    parser.add_argument('--seed', type=int, default=1234, help='Fix the seed of exprs')
+    parser.add_argument('--seed', type=int, default=4, help='Fix the seed of exprs')
     parser.add_argument('--n_trials', type=int, default=1, help='Number of model trials')
-    parser.add_argument('--n_samples_result_train', type=int, default=20, help='Number of samples to print the average gap cost extra in each epoch training')
+    parser.add_argument('--n_samples_result_train', type=int, default=30, help='Number of samples to print the average gap cost extra in each epoch training')
 
     # Flag for using GPU
     parser.add_argument('--device', type=str, default='cuda', help="Number of gpu to be used")
@@ -40,15 +39,15 @@ def parse_args():
     args = parser.parse_args()
     
     return args
-# trained 100 epochs for good preformance 
-# 5 type edges ../atsp_model_train_result/Oct07_01-45-55_HetroGAT_trained_ATSP50/trial_0
+
 def parse_args_test():
+    atsp_size = 100
     parser = argparse.ArgumentParser(description='Test model')
-    parser.add_argument('--atsp_size', type=int, default=1000, help="Size of the atsp to be solved")
-    parser.add_argument('--data_path', type=str, default='../tsp_input/generated_insatnces_100_size_1000', help='Dataset directory')
-    parser.add_argument('--model_path', default='../atsp_model_train_result/Oct07_21-40-43_HetroGAT_trained_ATSP50/trial_0', type=str)
-    parser.add_argument('--time_limit', type=float, default=10., help='Time limit for the 2 opt search in seconds') 
-    parser.add_argument('--perturbation_moves', type=int, default=20)
+    parser.add_argument('--atsp_size', type=int, default=atsp_size, help="Size of the atsp to be solved")
+    parser.add_argument('--data_path', type=str, default=f'../tsp_input/generated_insatnces_30_size_{atsp_size}', help='Dataset directory')
+    parser.add_argument('--model_path', default='../atsp_model_train_result/Oct15_17-34-03_HetroGATSum_trained_ATSP50/trial_0', type=str)
+    parser.add_argument('--time_limit', type=float, default=0.16, help='Time limit for the 2 opt search in seconds') 
+    parser.add_argument('--perturbation_moves', type=int, default=5)
     parser.add_argument('--device', type=str, default='cuda', help="Number of gpu to be used")
 
     args = parser.parse_args()
