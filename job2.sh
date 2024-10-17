@@ -36,7 +36,7 @@
 #python test_me.py
 
 # python grid_search.py
-python train.py
+python test.py
 
 
 
