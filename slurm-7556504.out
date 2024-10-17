@@ -1,0 +1,19 @@
+Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=False, half_st=True, model='HetroGATConcat', input_dim=1, hidden_dim=128, output_dim=1, relation_types='ss tt pp', n_gnn_layers=4, n_heads=64, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=15, n_epochs=100, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=30, device='cuda')
+Namespace(atsp_size=100, data_path='../tsp_input/generated_insatnces_30_size_100', model_path='../atsp_model_train_result/Oct17_04-09-53_HetroGATConcat_trained_ATSP50/trial_0', time_limit=0.16, perturbation_moves=5, device='cuda')
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 157, in <module>
+    main(args_test)
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 33, in main
+    test_set = datasets.TSPDataset(f'{args_test.data_path}/test.txt', args)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/datasets.py", line 181, in __init__
+    self.G, self.edge_id = optimized_line_graph_partition(G, args)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/datasets.py", line 100, in optimized_line_graph_partition
+    g2.ndata['e'] = torch.tensor(list(edge_id.keys()))
+    ~~~~~~~~^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/dgl/view.py", line 99, in __setitem__
+    self._graph._set_n_repr(self._ntid, self._nodes, {key: val})
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/dgl/heterograph.py", line 4344, in _set_n_repr
+    raise DGLError(
+dgl._ffi.base.DGLError: Expect number of features to match number of nodes (len(u)). Got 9900 and 9802 instead.

@@ -38,7 +38,7 @@ def main(args_test):
     model = get_model(args).to(args.device)
     print('device =', args.device)
 
-    checkpoint = torch.load(f'{args_test.model_path}/checkpoint_best_val.pt', map_location=args.device)
+    checkpoint = torch.load(f'{args_test.model_path}/checkpoint_best_avg_gap.pt', map_location=args.device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
 
