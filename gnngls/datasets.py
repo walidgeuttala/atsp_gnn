@@ -53,6 +53,54 @@ def log_memory_usage(step_description):
     print(f"Cached memory: {torch.cuda.memory_reserved() / 1024**2:.2f} MB", flush=True)
     print("=" * 40, flush=True)
 
+def optimized_line_graph_partition(g, args):
+    n = g.number_of_nodes()
+    m1 = (n-1)*(n-2)//2
+    m2 = n*(n-1)//2
+    if 'ss' in args.relation_types:
+        ss = torch.empty((n, m1, 2), dtype=torch.int32)
+    if 'tt' in args.relation_types:
+        tt = torch.empty((n, m1, 2), dtype=torch.int32)
+    # if 'pp' in args.relation_types:
+    #     pp = torch.empty((m2, 2), dtype=torch.int32)
+
+    edge_id = {edge: idx for idx, edge in enumerate(g.edges())}
+    
+    idx2 = 0
+    for x in range(0, n):
+        idx = 0
+        for y in range(0, n-1):
+            if x != y:
+                for z in range(y+1, n):
+                    if x != z:
+                        if 'ss' in args.relation_types:
+                            ss[x][idx] = torch.tensor([edge_id[(x, y)], edge_id[(x, z)]], dtype=torch.int32)
+                        if 'tt' in args.relation_types:
+                            tt[x][idx] = torch.tensor([edge_id[(y, x)], edge_id[(z, x)]], dtype=torch.int32)
+                        idx += 1
+        # if 'pp' in args.relation_types:
+        #     for y in range(x+1, n):
+        #         pp[idx2] = torch.tensor([edge_id[(x, y)], edge_id[(y, x)]], dtype=torch.int32)
+        #         idx2 += 1
+    edge_types = {}
+
+    if 'ss' in args.relation_types:
+        edge_types[('node1', 'ss', 'node1')] = (ss[0][:, 0], ss[0][:, 1])
+    if 'tt' in args.relation_types:
+        edge_types[('node1', 'tt', 'node1')] = (tt[0][:, 0], tt[0][:, 1])
+    # if 'pp' in args.relation_types:
+    #     edge_types[('node1', 'pp', 'node1')] = (pp[:, 0], pp[:, 1])
+
+  
+    g2 = dgl.heterograph(edge_types)
+
+    g2 = dgl.add_reverse_edges(g2)
+
+    g2.ndata['e'] = torch.tensor(list(edge_id.keys()))
+
+    return g2, edge_id    
+
+
 def optimized_line_graph(g, args):
     n = g.number_of_nodes()
     m1 = n*(n-1)*(n-2)//2

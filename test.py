@@ -22,22 +22,22 @@ from args import *
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-if __name__ == '__main__':
-    args_test = parse_args_test()
-
+def main(args_test):
     params = json.load(open(f'{args_test.model_path}/params.json'))
     args = parse_args()
     args = load_params(args, params)
+    args.half_st = True
+
     print(args)
     print(args_test)
-    
     test_set = datasets.TSPDataset(f'{args_test.data_path}/test.txt', args)
     output_path = f'{args_test.model_path}/trial_0/test_atsp{args_test.atsp_size}'
     os.makedirs(output_path, exist_ok=True)
     args.device = torch.device('cuda' if args.device  == 'cuda' and torch.cuda.is_available() else 'cpu')
-    print('device =', args.device)
     print(f'model: {args.model} trained in ATSP{args.atsp_size} for {args.n_epochs} and tested in ATSP{args_test.atsp_size} for {len(test_set.instances)}')
     model = get_model(args).to(args.device)
+    print('device =', args.device)
+
     checkpoint = torch.load(f'{args_test.model_path}/checkpoint_best_val.pt', map_location=args.device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
@@ -145,3 +145,13 @@ if __name__ == '__main__':
 
     print(f"Total time for model prediction: {result['total_model_time']:.4f} seconds")
     print(f"Total time for guided local search: {result['total_gls_time']:.4f} seconds")
+
+if __name__ == '__main__':
+    args_test = parse_args_test()
+
+    atsp_sizes = [500]
+    data_path = args_test.data_path
+    for atsp_size in atsp_sizes:
+        args_test.atsp_size = atsp_size
+        args_test.data_path = data_path+str(atsp_size)
+        main(args_test)

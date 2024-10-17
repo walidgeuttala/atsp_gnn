@@ -225,7 +225,7 @@ def print_connected_components_info(graph):
 
 
 # Example usage:
-num_nodes = 10  # Number of nodes in the graph
+num_nodes = 5  # Number of nodes in the graph
 relation_types = ['ss', 'st', 'tt', 'pp', 'ts']  # Define the types of relations to create
 g = nx.complete_graph(num_nodes, create_using=nx.DiGraph())
 g, _ = optimized_line_graph(num_nodes, relation_types)
