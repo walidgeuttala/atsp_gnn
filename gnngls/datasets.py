@@ -58,9 +58,9 @@ def optimized_line_graph_partition(g, args):
     m1 = (n-1)*(n-2)//2
     m2 = n*(n-1)//2
     if 'ss' in args.relation_types:
-        ss = torch.empty((n, m1, 2), dtype=torch.int32)
+        ss = torch.empty((1, m1, 2), dtype=torch.int32)
     if 'tt' in args.relation_types:
-        tt = torch.empty((n, m1, 2), dtype=torch.int32)
+        tt = torch.empty((1, m1, 2), dtype=torch.int32)
     # if 'pp' in args.relation_types:
     #     pp = torch.empty((m2, 2), dtype=torch.int32)
 
@@ -78,6 +78,7 @@ def optimized_line_graph_partition(g, args):
                         if 'tt' in args.relation_types:
                             tt[x][idx] = torch.tensor([edge_id[(y, x)], edge_id[(z, x)]], dtype=torch.int32)
                         idx += 1
+        break
         # if 'pp' in args.relation_types:
         #     for y in range(x+1, n):
         #         pp[idx2] = torch.tensor([edge_id[(x, y)], edge_id[(y, x)]], dtype=torch.int32)
@@ -177,7 +178,7 @@ class TSPDataset(torch.utils.data.Dataset):
             self.scalers = scalers
 
         G = nx.read_gpickle(self.root_dir / self.instances[0])
-        self.G, self.edge_id = optimized_line_graph(G, args)
+        self.G, self.edge_id = optimized_line_graph_partition(G, args)
 
         # Transfer the Hetro to Homo
         if args.to_homo:
