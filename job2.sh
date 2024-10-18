@@ -36,7 +36,14 @@
 #python test_me.py
 
 # python grid_search.py
-python test.py
+mpstat -P ALL
+echo "Memory usage:"
+free -h
+
+# Show GPU usage
+nvidia-smi
+
+#python train_pyg.py
 
 
 
