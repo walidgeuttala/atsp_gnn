@@ -65,8 +65,7 @@ def main(args_test):
         with torch.no_grad():
             y_pred = model(H, x)
         regret_pred = test_set.scalers['regret'].inverse_transform(y_pred.cpu().numpy())
-        es = H.ndata['e'].cpu().numpy()
-        for e, regret_pred_i in zip(es, regret_pred):
+        for e, regret_pred_i in zip(test_set.es, regret_pred):
             G.edges[e]['regret_pred'] = np.maximum(regret_pred_i.item(), 0)
 
         init_tour = algorithms.nearest_neighbor(G, 0, weight='regret_pred')

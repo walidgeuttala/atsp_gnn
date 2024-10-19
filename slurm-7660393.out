@@ -1,0 +1,4 @@
+Memory before the function: 389.59 MB
+Memory peak during function: 389.85 MB
+Time taken for n=50: 1.671288013458252 seconds
+Memory after the function: 390.04 MB

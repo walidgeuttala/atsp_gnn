@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/remove_extra_edges.py", line 108, in <module>
+    g = optimized_line_graph2(n)
+        ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/remove_extra_edges.py", line 20, in optimized_line_graph2
+    edge_id = {edge: idx for idx, edge in enumerate(g.edges())}
+                                                    ^
+NameError: name 'g' is not defined. Did you mean: 'g2'?

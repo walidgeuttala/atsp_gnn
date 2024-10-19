@@ -53,54 +53,6 @@ def log_memory_usage(step_description):
     print(f"Cached memory: {torch.cuda.memory_reserved() / 1024**2:.2f} MB", flush=True)
     print("=" * 40, flush=True)
 
-def optimized_line_graph_partition(g, args):
-    n = g.number_of_nodes()
-    m1 = (n-1)*(n-2)//2
-    m2 = n*(n-1)//2
-    if 'ss' in args.relation_types:
-        ss = torch.empty((n, m1, 2), dtype=torch.int32)
-    if 'tt' in args.relation_types:
-        tt = torch.empty((n, m1, 2), dtype=torch.int32)
-    # if 'pp' in args.relation_types:
-    #     pp = torch.empty((m2, 2), dtype=torch.int32)
-
-    edge_id = {edge: idx for idx, edge in enumerate(g.edges())}
-    
-    idx2 = 0
-    for x in range(0, n):
-        idx = 0
-        for y in range(0, n-1):
-            if x != y:
-                for z in range(y+1, n):
-                    if x != z:
-                        if 'ss' in args.relation_types:
-                            ss[x][idx] = torch.tensor([edge_id[(x, y)], edge_id[(x, z)]], dtype=torch.int32)
-                        if 'tt' in args.relation_types:
-                            tt[x][idx] = torch.tensor([edge_id[(y, x)], edge_id[(z, x)]], dtype=torch.int32)
-                        idx += 1
-        # if 'pp' in args.relation_types:
-        #     for y in range(x+1, n):
-        #         pp[idx2] = torch.tensor([edge_id[(x, y)], edge_id[(y, x)]], dtype=torch.int32)
-        #         idx2 += 1
-    edge_types = {}
-
-    if 'ss' in args.relation_types:
-        edge_types[('node1', 'ss', 'node1')] = (ss[0][:, 0], ss[0][:, 1])
-    if 'tt' in args.relation_types:
-        edge_types[('node1', 'tt', 'node1')] = (tt[0][:, 0], tt[0][:, 1])
-    # if 'pp' in args.relation_types:
-    #     edge_types[('node1', 'pp', 'node1')] = (pp[:, 0], pp[:, 1])
-
-  
-    g2 = dgl.heterograph(edge_types)
-
-    g2 = dgl.add_reverse_edges(g2)
-
-    g2.ndata['e'] = torch.tensor(list(edge_id.keys()))
-
-    return g2, edge_id    
-
-
 def optimized_line_graph(g, args):
     n = g.number_of_nodes()
     m1 = n*(n-1)*(n-2)//2
@@ -158,14 +110,14 @@ def optimized_line_graph(g, args):
 
     g2.ndata['e'] = torch.tensor(list(edge_id.keys()))
 
-    return g2, edge_id    
+    return g2    
 
 class TSPDataset(torch.utils.data.Dataset):
     def __init__(self, instances_file, args, scalers_file=None):
         if not isinstance(instances_file, pathlib.Path):
             instances_file = pathlib.Path(instances_file)
         self.root_dir = instances_file.parent
-
+        self.num_edges = args.atsp_size * (args.atsp_size-1)
         self.instances = [line.strip() for line in open(instances_file)]
 
         if scalers_file is None:
@@ -176,9 +128,9 @@ class TSPDataset(torch.utils.data.Dataset):
         else:
             self.scalers = scalers
 
-        G = nx.read_gpickle(self.root_dir / self.instances[0])
-        self.G, self.edge_id = optimized_line_graph(G, args)
-
+        graphs, _ = dgl.load_graphs(f"../tsp_input/hetero_graph_{args.atsp_size}.dgl")
+        self.G = graphs[0]
+        self.es = self.G.ndata['e'].cpu().numpy()
         # Transfer the Hetro to Homo
         if args.to_homo:
             self.G = dgl.to_homogeneous(self.G, ndata=['e'])
@@ -198,48 +150,22 @@ class TSPDataset(torch.utils.data.Dataset):
 
     def get_scaled_features(self, G):
         
-        features = []
-        regret = []
-        in_solution = []
-        for e, _ in self.edge_id.items():
-            features.append(G.edges[e]['weight'])
-            regret.append(G.edges[e]['regret'])
-            in_solution.append(G.edges[e]['in_solution'])
+        
+        features = torch.empty(self.num_edges, dtype=torch.float32)
+        regret = torch.empty(self.num_edges, dtype=torch.float32)
+        in_solution = torch.empty(self.num_edges, dtype=torch.float32)
+        
+        for idx, e in enumerate(self.es):
+            features[idx] = G.edges[e]['weight']
+            regret[idx] = G.edges[e]['regret']
+            in_solution[idx] = G.edges[e]['in_solution']
 
-        features = np.vstack(features)
-        features_transformed = self.scalers['weight'].transform(features)
-        regret = np.vstack(regret)
-        regret_transformed = self.scalers['regret'].transform(regret)
-        in_solution = np.vstack(in_solution)
+        features_transformed = self.scalers['weight'].transform(features.reshape(-1, 1))
+        regret_transformed = self.scalers['regret'].transform(regret.reshape(-1, 1))
         
         H = self.G
         H.ndata['weight'] = torch.tensor(features_transformed, dtype=torch.float32)
         H.ndata['regret'] = torch.tensor(regret_transformed, dtype=torch.float32)
-        H.ndata['in_solution'] = torch.tensor(in_solution, dtype=torch.float32)
-        H.ndata['e'] = self.G.ndata['e'].clone()
+        H.ndata['in_solution'] = in_solution.reshape(-1, 1)
+
         return H
-
-
-
-# import networkx as nx
-# import matplotlib.pyplot as plt
-
-# # Define the number of nodes
-# n = 500
-
-# # Create a complete directed graph
-# complete_graph = nx.complete_graph(n, create_using=nx.DiGraph)
-
-# # Optionally, you can visualize the graph (be cautious with large graphs)
-# # For a complete graph of size 250, visualization may not be clear or useful
-# # You can comment the visualization part if needed
-# # pos = nx.spring_layout(complete_graph)  # positions for all nodes
-# # nx.draw(complete_graph, pos, node_size=50, with_labels=False)
-# # plt.show()
-
-# # To verify the number of edges in the complete directed graph
-# print(f"Number of nodes: {complete_graph.number_of_nodes()}")
-# print(f"Number of edges: {complete_graph.number_of_edges()}")
-
-
-# _ = optimized_line_graph(complete_graph)

@@ -34,8 +34,8 @@ def atsp_results(model, args, val_set):
             y_pred = model(H, x)
         
         regret_pred = val_set.scalers['regret'].inverse_transform(y_pred.cpu().numpy())
-        es = H.ndata['e'].cpu().numpy()
-        for e, regret_pred_i in zip(es, regret_pred):
+        
+        for e, regret_pred_i in zip(val_set.es, regret_pred):
             G.edges[e]['regret_pred'] = np.maximum(regret_pred_i.item(), 0)
         
         opt_cost = gnngls.optimal_cost(G, weight='weight')
