@@ -1,0 +1,2 @@
+/scratch/slurm/SlurmdSpoolDir/x1001c0s3b0n0/job7660397/slurm_script: line 29: 2938935 Killed                  python remove_extra_edges.py
+slurmstepd: error: Detected 1 oom-kill event(s) in StepId=7660397.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.
