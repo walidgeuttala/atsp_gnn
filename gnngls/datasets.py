@@ -66,14 +66,18 @@ def optimized_line_graph_partition(g, args):
     
     idx2 = 0
     idx = 0
-    for y in range(0, n-1):
-        for z in range(y+1, n):
+    # the number of nodes in this graph is not n but (n-1), which have number of edges of (n-1)*(n-2)
+    maz = 0
+    for y in range(0, n-2):
+        for z in range(y+1, n-1):
             if 'ss' in args.relation_types:
                 ss[idx] = torch.tensor([y, z], dtype=torch.int32)
             if 'tt' in args.relation_types:
                 tt[idx] = torch.tensor([y+n-1, z+n-1], dtype=torch.int32)
             idx += 1
-        if 'pp' in args.relation_types:
+            maz = max(max(y+n+1, maz), z+n-1)
+    if 'pp' in args.relation_types:
+        for y in range(0, n-1):
             pp[idx2] = torch.tensor([y, y+n-1], dtype=torch.int32)
             idx2 += 1
 
@@ -163,11 +167,13 @@ class TSPDataset(torch.utils.data.Dataset):
         self.instances = [line.strip() for line in open(instances_file)]
         self.data_size = len(self.instances)
         self.edge_index_x = torch.empty((self.num_edges, 2), dtype=torch.int32)
-        self.edge_index_y = torch.empty((self.num_edges, 2), dtype=torch.int32)
+        idx = 0
         for i in range(self.atsp_size-1):
-            for j in range(i+1, self.atsp_size):
-                self.edge_index_x = torch.tensor([i, j], dtype=torch.int32)
-                self.edge_index_y = torch.tensor([j, i], dtype=torch.int32)
+            for j in range(self.atsp_size):
+                if i == j:
+                    continue
+                self.edge_index_x[idx] = torch.tensor([i, j], dtype=torch.int32)
+                idx += 1
         self.sub_graph_id = 0
         self.counter = 0
         if scalers_file is None:
@@ -177,13 +183,12 @@ class TSPDataset(torch.utils.data.Dataset):
             self.scalers = scalers['edges']
         else:
             self.scalers = scalers
-
         G = nx.read_gpickle(self.root_dir / self.instances[0])
         self.G = optimized_line_graph_partition(G, args)
 
         # Transfer the Hetro to Homo
-        if args.to_homo:
-            self.G = dgl.to_homogeneous(self.G, ndata=['e'])
+        # if args.to_homo:
+        #     self.G = dgl.to_homogeneous(self.G, ndata=['e'])
 
         self.etypes = self.G.etypes
 
@@ -196,6 +201,7 @@ class TSPDataset(torch.utils.data.Dataset):
 
         G = nx.read_gpickle(self.root_dir / self.instances[i])
         H = self.get_scaled_features(G)
+        
         return H
 
     def get_scaled_features(self, G):
@@ -204,6 +210,7 @@ class TSPDataset(torch.utils.data.Dataset):
         in_solution = torch.empty(2*(self.atsp_size - 1), dtype=torch.float32)
         idx2 = 0
         for idx in range(self.sub_graph_id*(self.atsp_size-1), self.sub_graph_id*(self.atsp_size-1)+self.atsp_size-1):
+            
             source, target = self.edge_index_x[idx][0].item(), self.edge_index_x[idx][1].item()
             # Adding the features for the SS sub-graph  and it also contains the PP features         
             features[idx2] = G.edges[(source, target)]['weight']
@@ -216,18 +223,19 @@ class TSPDataset(torch.utils.data.Dataset):
             idx2 += 1
 
         self.counter += 1
-        if self.counter == self.instances:
+        if self.counter == self.data_size:
+            self.counter = 0
             self.sub_graph_id += 1
-            if self.sub_graph_id == self.atsp_size:
+            if self.sub_graph_id == self.atsp_size-1:
                 self.sub_graph_id = 0
 
-        features_transformed = self.scalers['weight'].transform(features.numpy())
-        regret_transformed = self.scalers['regret'].transform(regret.numpy())
+        features_transformed = self.scalers['weight'].transform(features.reshape(-1, 1).numpy())
+        regret_transformed = self.scalers['regret'].transform(regret.reshape(-1, 1).numpy())
         
         H = self.G
         H.ndata['weight'] = torch.tensor(features_transformed, dtype=torch.float32)
         H.ndata['regret'] = torch.tensor(regret_transformed, dtype=torch.float32)
-        H.ndata['in_solution'] = torch.tensor(in_solution, dtype=torch.float32)
+        H.ndata['in_solution'] = in_solution.reshape(-1, 1)
 
         return H
 

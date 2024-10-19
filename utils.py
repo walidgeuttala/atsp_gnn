@@ -21,22 +21,34 @@ def calculate_statistics(tensors):
     return stats
 
 def atsp_results(model, args, val_set):
+    save_size = val_set.data_size
+    val_set.data_size = 1
+    sub_graph_id = val_set.sub_graph_id
+    val_set.sub_graph_id = 0
     result2 = dict()
     keys = ['avg_corr', 'avg_corr_cosin', 'avg_init_cost', 'avg_opt_cost', 'avg_gap']
     for key in keys:
         result2.setdefault(key, 0.)
     for idx in range(args.n_samples_result_train):
         G = nx.read_gpickle(f'{args.data_dir}/{val_set.instances[idx]}')
-        H = val_set.get_scaled_features(G).to(args.device)
-        x = H.ndata['weight']
-        y = H.ndata['regret']
+
+        regret_pred = torch.empty((args.atsp_size, args.atsp_size), dtype=torch.float32)
+        regret_pred.fill_diagonal_(1e6)
         with torch.no_grad():
-            y_pred = model(H, x)
-        
-        regret_pred = val_set.scalers['regret'].inverse_transform(y_pred.cpu().numpy())
-        es = H.ndata['e'].cpu().numpy()
-        for e, regret_pred_i in zip(es, regret_pred):
-            G.edges[e]['regret_pred'] = np.maximum(regret_pred_i.item(), 0)
+            for i in range(args.atsp_size-1):
+                H = val_set.get_scaled_features(G).to(args.device)
+                x = H.ndata['weight']
+                y_pred = model(H, x)
+                regret_pred_idx = val_set.scalers['regret'].inverse_transform(y_pred.cpu().numpy())
+                regret_pred_idx = torch.tensor(regret_pred_idx, dtype=torch.float32)
+                
+                regret_pred[i, 1:] = y_pred[:args.atsp_size-1].view(1, -1) # the problem as I don't average given the different prediciton I should add it later 
+                regret_pred[1:, i] = y_pred[args.atsp_size-1:].view(-1, 1).squeeze() 
+                
+        for i in range(args.atsp_size):
+            for j in range(args.atsp_size):
+                if i != j:
+                    G.edges[(i, j)]['regret_pred'] = np.maximum(regret_pred[i, j].item(), 0)
         
         opt_cost = gnngls.optimal_cost(G, weight='weight')
         
@@ -48,6 +60,8 @@ def atsp_results(model, args, val_set):
         result2['avg_opt_cost'] += opt_cost
         result2['avg_gap'] += (init_cost / opt_cost - 1) * 100
     
+    val_set.data_size = save_size
+    val_set.sub_graph_id = sub_graph_id
     return result2
 
 def tsp_to_atsp_instance(G1):

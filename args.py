@@ -31,7 +31,7 @@ def parse_args():
     parser.add_argument('--checkpoint_freq', type=int, default=10, help='Checkpoint frequency')
     parser.add_argument('--seed', type=int, default=4, help='Fix the seed of exprs')
     parser.add_argument('--n_trials', type=int, default=1, help='Number of model trials')
-    parser.add_argument('--n_samples_result_train', type=int, default=30, help='Number of samples to print the average gap cost extra in each epoch training')
+    parser.add_argument('--n_samples_result_train', type=int, default=1, help='Number of samples to print the average gap cost extra in each epoch training')
 
     # Flag for using GPU
     parser.add_argument('--device', type=str, default='cuda', help="Number of gpu to be used")

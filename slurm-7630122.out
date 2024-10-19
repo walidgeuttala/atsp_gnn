@@ -1,0 +1,41 @@
+Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=False, half_st=False, model='HetroGATConcat', input_dim=1, hidden_dim=128, output_dim=1, relation_types='ss tt pp', n_gnn_layers=4, n_heads=64, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=1, n_epochs=100, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=1, device='cuda')
+device = cuda
+  0%|          | 0/100 [00:00<?, ?it/s]  0%|          | 0/100 [01:25<?, ?it/s, avg_corr=0.6013, avg_corr_cosin=0.9402, avg_gap=169.5988, avg_init_cost=4835096.0000, avg_opt_cost=1793441.0000, epoch=0.0000, train_loss=0.0114, val_loss=0.0100]  1%|          | 1/100 [01:25<2:20:53, 85.39s/it, avg_corr=0.6013, avg_corr_cosin=0.9402, avg_gap=169.5988, avg_init_cost=4835096.0000, avg_opt_cost=1793441.0000, epoch=0.0000, train_loss=0.0114, val_loss=0.0100]  1%|          | 1/100 [02:44<4:31:42, 164.67s/it, avg_corr=0.6013, avg_corr_cosin=0.9402, avg_gap=169.5988, avg_init_cost=4835096.0000, avg_opt_cost=1793441.0000, epoch=0.0000, train_loss=0.0114, val_loss=0.0100]
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 171, in <module>
+    best_val_result, best_avg_gap_result, run_name = train(args, trial_id, run_name)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 119, in train
+    result['val_loss'][epoch] = epoch_test(model, val_loader, criterion, args.device)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 48, in epoch_test
+    for batch_i, batch in enumerate(data_loader):
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 631, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 1346, in _next_data
+    return self._process_data(data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/torch/utils/data/dataloader.py", line 1372, in _process_data
+    data.reraise()
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/torch/_utils.py", line 722, in reraise
+    raise exception
+KeyError: Caught KeyError in DataLoader worker process 0.
+Original Traceback (most recent call last):
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/torch/utils/data/_utils/worker.py", line 308, in _worker_loop
+    data = fetcher.fetch(index)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/torch/utils/data/_utils/fetch.py", line 51, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+            ~~~~~~~~~~~~^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/datasets.py", line 203, in __getitem__
+    H = self.get_scaled_features(G)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/datasets.py", line 216, in get_scaled_features
+    features[idx2] = G.edges[(source, target)]['weight']
+                     ~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda118/lib/python3.12/site-packages/networkx/classes/reportviews.py", line 1094, in __getitem__
+    return self._adjdict[u][v]
+           ~~~~~~~~~~~~~^^^
+KeyError: 84
+

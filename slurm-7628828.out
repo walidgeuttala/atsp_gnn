@@ -1,0 +1,69 @@
+Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=False, half_st=False, model='HetroGATConcat', input_dim=1, hidden_dim=128, output_dim=1, relation_types='ss tt pp', n_gnn_layers=4, n_heads=64, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=1, n_epochs=100, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=1, device='cuda')
+device = cuda
+  0%|          | 0/100 [00:00<?, ?it/s]idx : 0
+sub_graph_id0, 
+idx : 1
+sub_graph_id1, 
+idx : 2
+sub_graph_id2, 
+idx : 3
+sub_graph_id3, 
+idx : 4
+sub_graph_id4, 
+idx : 5
+sub_graph_id5, 
+idx : 6
+sub_graph_id6, 
+idx : 7
+sub_graph_id7, 
+idx : 8
+sub_graph_id8, 
+idx : 9
+sub_graph_id9, 
+idx : 10
+sub_graph_id10, 
+idx : 11
+sub_graph_id11, 
+idx : 12
+sub_graph_id12, 
+idx : 13
+sub_graph_id13, 
+idx : 14
+sub_graph_id14, 
+idx : 15
+sub_graph_id15, 
+idx : 16
+sub_graph_id16, 
+idx : 17
+sub_graph_id17, 
+idx : 18
+sub_graph_id18, 
+idx : 19
+sub_graph_id19, 
+idx : 20
+sub_graph_id20, 
+idx : 21
+sub_graph_id21, 
+idx : 22
+sub_graph_id22, 
+idx : 23
+sub_graph_id23, 
+idx : 24
+sub_graph_id24, 
+idx : 25
+  0%|          | 0/100 [01:25<?, ?it/s]
+sub_graph_id25, 
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 171, in <module>
+    best_val_result, best_avg_gap_result, run_name = train(args, trial_id, run_name)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 120, in train
+    result2 = atsp_results(model, args, val_set)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/utils.py", line 38, in atsp_results
+    H = val_set.get_scaled_features(G).to(args.device)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/datasets.py", line 214, in get_scaled_features
+    source, target = self.edge_index_x[idx][0].item(), self.edge_index_x[idx][1].item()
+                     ~~~~~~~~~~~~~~~~~^^^^^
+IndexError: index 1225 is out of bounds for dimension 0 with size 1225
