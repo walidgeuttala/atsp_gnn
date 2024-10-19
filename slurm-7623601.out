@@ -1,0 +1,4 @@
+  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 123
+    formatted_result['train_loss'] = f'{result['train_loss'][epoch]:.4f}'
+                                                ^^^^^^^^^^
+SyntaxError: f-string: unmatched '['

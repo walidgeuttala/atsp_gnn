@@ -120,8 +120,8 @@ def train(args, trial_id, run_name=None):
         result2 = atsp_results(model, args, val_set)
         
         formatted_result = {key: f'{(value/args.n_samples_result_train):.4f}' for key, value in result2.items()}  # Format values to 4 decimal places
-        formatted_result['train_loss'] = f'{result['train_loss'][epoch]:.4f}'
-        formatted_result['val_loss'] = f'{result['val_loss'][epoch]:.4f}'
+        formatted_result['train_loss'] = f"{result['train_loss'][epoch]:.4f}"
+        formatted_result['val_loss'] = f"{result['val_loss'][epoch]:.4f}"
         formatted_result['epoch'] = f'{epoch:.4f}'
         pbar.set_postfix(**formatted_result) 
         # Create the formatted string in the specified order
