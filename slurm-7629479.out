@@ -1,14 +1,0 @@
-Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=False, half_st=False, model='HetroGATConcat', input_dim=1, hidden_dim=128, output_dim=1, relation_types='ss tt pp', n_gnn_layers=4, n_heads=64, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=1, n_epochs=100, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=1, device='cuda')
-device = cuda
-  0%|          | 0/100 [00:00<?, ?it/s]  0%|          | 0/100 [01:24<?, ?it/s]
-Traceback (most recent call last):
-  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 171, in <module>
-    best_val_result, best_avg_gap_result, run_name = train(args, trial_id, run_name)
-                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/project/p_gnn001/code/tsp/tsp_gnn/train.py", line 120, in train
-    result2 = atsp_results(model, args, val_set)
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/project/p_gnn001/code/tsp/tsp_gnn/utils.py", line 47, in atsp_results
-    for j in range(args.ats_size):
-                   ^^^^^^^^^^^^^
-AttributeError: 'Namespace' object has no attribute 'ats_size'. Did you mean: 'atsp_size'?

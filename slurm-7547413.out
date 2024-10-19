@@ -1,8 +1,0 @@
-device = cuda
-Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=False, half_st=False, model='HetroGATConcat', input_dim=1, hidden_dim=128, output_dim=1, relation_types='ss st tt pp', n_gnn_layers=4, n_heads=64, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=15, n_epochs=100, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=30, device='cuda')
-Namespace(atsp_size=100, data_path='../tsp_input/generated_insatnces_30_size_', model_path='../atsp_model_train_result/Oct15_14-45-35_HetroGATConcat_trained_ATSP50/trial_0', time_limit=0.16, perturbation_moves=5, device='cuda')
-Traceback (most recent call last):
-  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 151, in <module>
-    data_path = args_test.data_path.copy()
-                ^^^^^^^^^^^^^^^^^^^^^^^^
-AttributeError: 'str' object has no attribute 'copy'
