@@ -2,6 +2,49 @@ import networkx as nx
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
+import dgl 
+
+def optimized_line_graph_partition(g, args):
+    n = g.number_of_nodes()
+    m1 = (n-1)*(n-2)//2
+    m2 = (n-1)
+    if 'ss' in args.relation_types:
+        ss = torch.empty((m1, 2), dtype=torch.int32)
+    if 'tt' in args.relation_types:
+        tt = torch.empty((m1, 2), dtype=torch.int32)
+    if 'pp' in args.relation_types:
+        pp = torch.empty((m2, 2), dtype=torch.int32)
+    
+    idx2 = 0
+    idx = 0
+    # the number of nodes in this graph is not n but (n-1), which have number of edges of (n-1)*(n-2)
+    for y in range(0, n-2):
+        for z in range(y+1, n-1):
+            if 'ss' in args.relation_types:
+                ss[idx] = torch.tensor([y, z], dtype=torch.int32)
+            if 'tt' in args.relation_types:
+                tt[idx] = torch.tensor([y+n-1, z+n-1], dtype=torch.int32)
+            idx += 1
+    if 'pp' in args.relation_types:
+        for y in range(0, n-1):
+            pp[idx2] = torch.tensor([y, y+n-1], dtype=torch.int32)
+            idx2 += 1
+
+    edge_types = {}
+
+    if 'ss' in args.relation_types:
+        edge_types[('node1', 'ss', 'node1')] = (ss[:, 0], ss[:, 1])
+    if 'tt' in args.relation_types:
+        edge_types[('node1', 'tt', 'node1')] = (tt[:, 0], tt[:, 1])
+    if 'pp' in args.relation_types:
+        edge_types[('node1', 'pp', 'node1')] = (pp[:, 0], pp[:, 1])
+
+  
+    g2 = dgl.heterograph(edge_types)
+
+    g2 = dgl.add_reverse_edges(g2)
+
+    return g2    
 
 def optimized_line_graph(num_nodes, relation_types, output_dir="graphs"):
     # Create a random graph with num_nodes
@@ -226,7 +269,7 @@ def print_connected_components_info(graph):
 
 # Example usage:
 num_nodes = 5  # Number of nodes in the graph
-relation_types = ['ss', 'st', 'tt', 'pp', 'ts']  # Define the types of relations to create
+relation_types = ['ss', 'tt', 'pp']  # Define the types of relations to create
 g = nx.complete_graph(num_nodes, create_using=nx.DiGraph())
 g, _ = optimized_line_graph(num_nodes, relation_types)
 print_connected_components_info(g)

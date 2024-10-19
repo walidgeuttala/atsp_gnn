@@ -67,7 +67,6 @@ def optimized_line_graph_partition(g, args):
     idx2 = 0
     idx = 0
     # the number of nodes in this graph is not n but (n-1), which have number of edges of (n-1)*(n-2)
-    maz = 0
     for y in range(0, n-2):
         for z in range(y+1, n-1):
             if 'ss' in args.relation_types:
@@ -75,7 +74,6 @@ def optimized_line_graph_partition(g, args):
             if 'tt' in args.relation_types:
                 tt[idx] = torch.tensor([y+n-1, z+n-1], dtype=torch.int32)
             idx += 1
-            maz = max(max(y+n+1, maz), z+n-1)
     if 'pp' in args.relation_types:
         for y in range(0, n-1):
             pp[idx2] = torch.tensor([y, y+n-1], dtype=torch.int32)
