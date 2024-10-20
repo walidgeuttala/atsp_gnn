@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 16, in <module>
+    from gnngls import algorithms, datasets
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/datasets.py", line 6, in <module>
+    import dgl
+  File "/home/p_gnngw/.local/lib/python3.11/site-packages/dgl/__init__.py", line 14, in <module>
+    from .backend import backend_name, load_backend  # usort: skip
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/.local/lib/python3.11/site-packages/dgl/backend/__init__.py", line 122, in <module>
+    load_backend(get_preferred_backend())
+  File "/home/p_gnngw/.local/lib/python3.11/site-packages/dgl/backend/__init__.py", line 51, in load_backend
+    from .._ffi.base import load_tensor_adapter  # imports DGL C library
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/.local/lib/python3.11/site-packages/dgl/_ffi/base.py", line 50, in <module>
+    _LIB, _LIB_NAME, _DIR_NAME = _load_lib()
+                                 ^^^^^^^^^^^
+  File "/home/p_gnngw/.local/lib/python3.11/site-packages/dgl/_ffi/base.py", line 39, in _load_lib
+    lib = ctypes.CDLL(lib_path[0])
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda121/lib/python3.11/ctypes/__init__.py", line 376, in __init__
+    self._handle = _dlopen(self._name, mode)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: libcudart.so.11.0: cannot open shared object file: No such file or directory

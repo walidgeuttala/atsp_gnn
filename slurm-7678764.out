@@ -1,0 +1,164 @@
+Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=True, half_st=False, model='EdgePropertyPredictionModel1', input_dim=1, hidden_dim=32, output_dim=1, relation_types='ss tt pp', n_gnn_layers=1, n_heads=1, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=15, n_epochs=1, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=30, device='cuda')
+Namespace(atsp_size=1000, data_path='../tsp_input/generated_insatnces_100_size_1000', model_path='../atsp_model_train_result/Oct20_15-06-46_EdgePropertyPredictionModel1_trained_ATSP50/trial_0', time_limit=0.16, perturbation_moves=5, device='cuda')
+before uploading the test
+GPU Memory Allocated: 0.00 MB
+GPU Memory Cached: 0.00 MB
+GPU Memory Free: 40377.25 MB
+Total GPU Memory: 40377.25 MB
+/home/p_gnngw/miniconda3/envs/cuda121/lib/python3.11/site-packages/sklearn/base.py:376: InconsistentVersionWarning: Trying to unpickle estimator MinMaxScaler from version 1.3.0 when using version 1.5.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+after
+GPU Memory Allocated: 0.00 MB
+GPU Memory Cached: 0.00 MB
+GPU Memory Free: 40377.25 MB
+Total GPU Memory: 40377.25 MB
+model: EdgePropertyPredictionModel1 trained in ATSP1000 for 1 and tested in ATSP1000 for 30
+before the model
+GPU Memory Allocated: 0.00 MB
+GPU Memory Cached: 0.00 MB
+GPU Memory Free: 40377.25 MB
+Total GPU Memory: 40377.25 MB
+after the model
+GPU Memory Allocated: 0.12 MB
+GPU Memory Cached: 2.00 MB
+GPU Memory Free: 40375.13 MB
+Total GPU Memory: 40377.25 MB
+device = cuda
+after the loading weights
+GPU Memory Allocated: 0.49 MB
+GPU Memory Cached: 2.00 MB
+GPU Memory Free: 40374.76 MB
+Total GPU Memory: 40377.25 MB
+  0%|          | 0/30 [00:00<?, ?it/s]before loading the first sample
+GPU Memory Allocated: 0.49 MB
+GPU Memory Cached: 2.00 MB
+GPU Memory Free: 40374.76 MB
+Total GPU Memory: 40377.25 MB
+|===========================================================================|
+|                  PyTorch CUDA memory summary, device ID 0                 |
+|---------------------------------------------------------------------------|
+|            CUDA OOMs: 0            |        cudaMalloc retries: 0         |
+|===========================================================================|
+|        Metric         | Cur Usage  | Peak Usage | Tot Alloc  | Tot Freed  |
+|---------------------------------------------------------------------------|
+| Allocated memory      |   4407 KiB |   4407 KiB |   4407 KiB |      0 B   |
+|       from large pool |   3902 KiB |   3902 KiB |   3902 KiB |      0 B   |
+|       from small pool |    505 KiB |    505 KiB |    505 KiB |      0 B   |
+|---------------------------------------------------------------------------|
+| Active memory         |   4407 KiB |   4407 KiB |   4407 KiB |      0 B   |
+|       from large pool |   3902 KiB |   3902 KiB |   3902 KiB |      0 B   |
+|       from small pool |    505 KiB |    505 KiB |    505 KiB |      0 B   |
+|---------------------------------------------------------------------------|
+| Requested memory      |   4284 KiB |   4284 KiB |   4284 KiB |      0 B   |
+|       from large pool |   3902 KiB |   3902 KiB |   3902 KiB |      0 B   |
+|       from small pool |    381 KiB |    381 KiB |    381 KiB |      0 B   |
+|---------------------------------------------------------------------------|
+| GPU reserved memory   |  22528 KiB |  22528 KiB |  22528 KiB |      0 B   |
+|       from large pool |  20480 KiB |  20480 KiB |  20480 KiB |      0 B   |
+|       from small pool |   2048 KiB |   2048 KiB |   2048 KiB |      0 B   |
+|---------------------------------------------------------------------------|
+| Non-releasable memory |  18120 KiB |  18120 KiB |  18625 KiB | 516608 B   |
+|       from large pool |  16577 KiB |  16577 KiB |  16577 KiB |      0 B   |
+|       from small pool |   1543 KiB |   2047 KiB |   2047 KiB | 516608 B   |
+|---------------------------------------------------------------------------|
+| Allocations           |     363    |     363    |     363    |       0    |
+|       from large pool |       1    |       1    |       1    |       0    |
+|       from small pool |     362    |     362    |     362    |       0    |
+|---------------------------------------------------------------------------|
+| Active allocs         |     363    |     363    |     363    |       0    |
+|       from large pool |       1    |       1    |       1    |       0    |
+|       from small pool |     362    |     362    |     362    |       0    |
+|---------------------------------------------------------------------------|
+| GPU reserved segments |       2    |       2    |       2    |       0    |
+|       from large pool |       1    |       1    |       1    |       0    |
+|       from small pool |       1    |       1    |       1    |       0    |
+|---------------------------------------------------------------------------|
+| Non-releasable allocs |       2    |       2    |       2    |       0    |
+|       from large pool |       1    |       1    |       1    |       0    |
+|       from small pool |       1    |       1    |       1    |       0    |
+|---------------------------------------------------------------------------|
+| Oversize allocations  |       0    |       0    |       0    |       0    |
+|---------------------------------------------------------------------------|
+| Oversize GPU segments |       0    |       0    |       0    |       0    |
+|===========================================================================|
+
+after
+GPU Memory Allocated: 4.30 MB
+GPU Memory Cached: 22.00 MB
+GPU Memory Free: 40350.95 MB
+Total GPU Memory: 40377.25 MB
+1
+GPU Memory Allocated: 4.30 MB
+GPU Memory Cached: 22.00 MB
+GPU Memory Free: 40350.95 MB
+Total GPU Memory: 40377.25 MB
+2
+GPU Memory Allocated: 134.43 MB
+GPU Memory Cached: 388.00 MB
+GPU Memory Free: 39854.82 MB
+Total GPU Memory: 40377.25 MB
+  0%|          | 0/30 [00:42<?, ?it/s]
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 175, in <module>
+    main(args_test)
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 82, in main
+    y_pred = model(H, x)
+             ^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/model.py", line 107, in forward
+    h = l(G, h.detach()) + h.detach()
+        ^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/model_utils.py", line 58, in forward
+    h = self.message_passing(x, G=G).view(G.number_of_nodes(), -1)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/model_utils.py", line 32, in forward
+    y = self.module(G, x).view(G.number_of_nodes(), -1)
+        ^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/miniconda3/envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/.local/lib/python3.11/site-packages/dgl/nn/pytorch/conv/gatconv.py", line 278, in forward
+    if (graph.in_degrees() == 0).any():
+        ^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/.local/lib/python3.11/site-packages/dgl/heterograph.py", line 3671, in in_degrees
+    deg = self._graph.in_degrees(etid, v_tensor)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/p_gnngw/.local/lib/python3.11/site-packages/dgl/heterograph_index.py", line 720, in in_degrees
+    _CAPI_DGLHeteroInDegrees(self, int(etype), F.to_dgl_nd(v))
+  File "dgl/_ffi/_cython/./function.pxi", line 295, in dgl._ffi._cy3.core.FunctionBase.__call__
+  File "dgl/_ffi/_cython/./function.pxi", line 227, in dgl._ffi._cy3.core.FuncCall
+  File "dgl/_ffi/_cython/./function.pxi", line 217, in dgl._ffi._cy3.core.FuncCall3
+dgl._ffi.base.DGLError: [17:09:32] /opt/dgl/src/runtime/cuda/cuda_device_api.cc:117: Check failed: e == cudaSuccess || e == cudaErrorCudartUnloading: CUDA: out of memory
+Stack trace:
+  [bt] (0) /home/p_gnngw/.local/lib/python3.11/site-packages/dgl/libdgl.so(+0x8b0785) [0x7fc1ebd45785]
+  [bt] (1) /home/p_gnngw/.local/lib/python3.11/site-packages/dgl/libdgl.so(dgl::runtime::CUDADeviceAPI::AllocDataSpace(DGLContext, unsigned long, unsigned long, DGLDataType)+0x17d) [0x7fc1ebd470ad]
+  [bt] (2) /home/p_gnngw/.local/lib/python3.11/site-packages/dgl/libdgl.so(dgl::runtime::NDArray::Empty(std::vector<long, std::allocator<long> >, DGLDataType, DGLContext)+0x170) [0x7fc1ebbbf470]
+  [bt] (3) /home/p_gnngw/.local/lib/python3.11/site-packages/dgl/libdgl.so(dgl::aten::NewIdArray(long, DGLContext, unsigned char)+0x6d) [0x7fc1eb7d0edd]
+  [bt] (4) /home/p_gnngw/.local/lib/python3.11/site-packages/dgl/libdgl.so(dgl::runtime::NDArray dgl::aten::impl::Range<(DGLDeviceType)2, long>(long, long, DGLContext)+0x97) [0x7fc1ebd63c07]
+  [bt] (5) /home/p_gnngw/.local/lib/python3.11/site-packages/dgl/libdgl.so(dgl::aten::Range(long, long, unsigned char, DGLContext)+0x1fd) [0x7fc1eb7d23ad]
+  [bt] (6) /home/p_gnngw/.local/lib/python3.11/site-packages/dgl/libdgl.so(std::pair<dgl::runtime::NDArray, dgl::runtime::NDArray> dgl::aten::impl::Sort<(DGLDeviceType)2, int>(dgl::runtime::NDArray, int)+0x54) [0x7fc1ebd6e044]
+  [bt] (7) /home/p_gnngw/.local/lib/python3.11/site-packages/dgl/libdgl.so(dgl::aten::Sort(dgl::runtime::NDArray, int)+0x502) [0x7fc1eb7ea882]
+  [bt] (8) /home/p_gnngw/.local/lib/python3.11/site-packages/dgl/libdgl.so(void dgl::aten::impl::COOSort_<(DGLDeviceType)2, int>(dgl::aten::COOMatrix*, bool)+0x394) [0x7fc1ebd76464]
+
+

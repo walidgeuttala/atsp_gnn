@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 15, in <module>
+    import gnngls
+  File "/project/p_gnn001/code/tsp/tsp_gnn/gnngls/__init__.py", line 2, in <module>
+    import lkh
+ModuleNotFoundError: No module named 'lkh'

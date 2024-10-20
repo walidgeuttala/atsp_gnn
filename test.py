@@ -8,10 +8,9 @@ import uuid
 import os 
 import networkx as nx
 import numpy as np
-import pandas as pd
 import torch
 import tqdm.auto as tqdm
-
+import pickle 
 import gnngls
 from gnngls import algorithms, datasets
 from gnngls.model import get_model
@@ -26,10 +25,10 @@ def main(args_test):
     params = json.load(open(f'{args_test.model_path}/params.json'))
     args = parse_args()
     args = load_params(args, params)
-    args.half_st = True
-
+    args.device = 'cuda'
     print(args)
     print(args_test)
+    args.atsp_size = args_test.atsp_size
     test_set = datasets.TSPDataset(f'{args_test.data_path}/test.txt', args)
     output_path = f'{args_test.model_path}/trial_0/test_atsp{args_test.atsp_size}'
     os.makedirs(output_path, exist_ok=True)
@@ -41,7 +40,6 @@ def main(args_test):
     checkpoint = torch.load(f'{args_test.model_path}/checkpoint_best_val.pt', map_location=args.device)
     model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
-
     pbar = tqdm.tqdm(test_set.instances)
     result = {
         'init_gaps': [],
@@ -56,8 +54,10 @@ def main(args_test):
         'total_model_time': 0,
         'total_gls_time': 0
         }
+
     for instance in pbar:
-        G = nx.read_gpickle(test_set.root_dir / instance)
+        with open(test_set.root_dir / instance, 'rb') as f:
+            G = pickle.load(f)
         opt_cost = gnngls.optimal_cost(G, weight='weight')        
         H = test_set.get_scaled_features(G).to(args.device)
         x = H.ndata['weight']
@@ -148,7 +148,7 @@ def main(args_test):
 if __name__ == '__main__':
     args_test = parse_args_test()
 
-    atsp_sizes = [100, 150, 250]
+    atsp_sizes = [1000]
     data_path = args_test.data_path
     for atsp_size in atsp_sizes:
         args_test.atsp_size = atsp_size

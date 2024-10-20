@@ -1,0 +1,37 @@
+Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=True, half_st=False, model='EdgePropertyPredictionModel1', input_dim=1, hidden_dim=32, output_dim=1, relation_types='ss tt pp', n_gnn_layers=1, n_heads=1, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=15, n_epochs=1, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=30, device='cuda')
+Namespace(atsp_size=1000, data_path='../tsp_input/generated_insatnces_100_size_1000', model_path='../atsp_model_train_result/Oct20_15-06-46_EdgePropertyPredictionModel1_trained_ATSP50/trial_0', time_limit=0.16, perturbation_moves=5, device='cuda')
+before uploading the test
+GPU Memory Allocated: 0.00 MB
+GPU Memory Cached: 0.00 MB
+GPU Memory Free: 40377.25 MB
+Total GPU Memory: 40377.25 MB
+after
+GPU Memory Allocated: 0.00 MB
+GPU Memory Cached: 0.00 MB
+GPU Memory Free: 40377.25 MB
+Total GPU Memory: 40377.25 MB
+model: EdgePropertyPredictionModel1 trained in ATSP1000 for 1 and tested in ATSP1000 for 30
+before the model
+GPU Memory Allocated: 0.00 MB
+GPU Memory Cached: 0.00 MB
+GPU Memory Free: 40377.25 MB
+Total GPU Memory: 40377.25 MB
+after the model
+GPU Memory Allocated: 0.12 MB
+GPU Memory Cached: 2.00 MB
+GPU Memory Free: 40375.13 MB
+Total GPU Memory: 40377.25 MB
+device = cuda
+after the loading weights
+GPU Memory Allocated: 0.49 MB
+GPU Memory Cached: 2.00 MB
+GPU Memory Free: 40374.76 MB
+Total GPU Memory: 40377.25 MB
+  0%|          | 0/30 [00:00<?, ?it/s]Traceback (most recent call last):
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 176, in <module>
+    main(args_test)
+  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 67, in main
+    dgl.data.clear_cache()
+    ^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'dgl.data' has no attribute 'clear_cache'
+  0%|          | 0/30 [00:01<?, ?it/s]

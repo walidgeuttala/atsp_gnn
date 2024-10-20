@@ -1,0 +1,36 @@
+Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=True, half_st=False, model='EdgePropertyPredictionModel1', input_dim=1, hidden_dim=32, output_dim=1, relation_types='ss tt pp', n_gnn_layers=1, n_heads=1, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=15, n_epochs=1, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=30, device='cpu  ')
+Namespace(atsp_size=1000, data_path='../tsp_input/generated_insatnces_100_size_1000', model_path='../atsp_model_train_result/Oct20_15-06-46_EdgePropertyPredictionModel1_trained_ATSP50/trial_0', time_limit=0.16, perturbation_moves=5, device='cuda')
+before uploading the test
+RAM used: 9.45 GB
+RAM available: 236.30 GB
+/home/p_gnngw/miniconda3/envs/cuda1/lib/python3.11/site-packages/sklearn/base.py:376: InconsistentVersionWarning: Trying to unpickle estimator MinMaxScaler from version 1.3.0 when using version 1.5.1. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+after
+RAM used: 47.10 GB
+RAM available: 198.63 GB
+model: EdgePropertyPredictionModel1 trained in ATSP1000 for 1 and tested in ATSP1000 for 30
+before the model
+RAM used: 47.10 GB
+RAM available: 198.64 GB
+after the model
+RAM used: 47.00 GB
+RAM available: 198.74 GB
+device = cpu
+after the loading weights
+RAM used: 46.87 GB
+RAM available: 198.86 GB
+  0%|          | 0/30 [00:00<?, ?it/s]before loading the first sample
+RAM used: 46.77 GB
+RAM available: 198.97 GB
+after
+RAM used: 47.85 GB
+RAM available: 197.88 GB
+1
+RAM used: 47.85 GB
+RAM available: 197.88 GB
+2
+RAM used: 47.97 GB
+RAM available: 197.76 GB
+/scratch/slurm/SlurmdSpoolDir/x1000c1s1b0n1/job7688858/slurm_script: line 41: 2352259 Killed                  python test.py
+slurmstepd: error: Detected 1 oom-kill event(s) in StepId=7688858.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.
