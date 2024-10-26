@@ -1,9 +1,0 @@
-Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=False, half_st=False, model='HetroGATConcat', input_dim=1, hidden_dim=128, output_dim=1, relation_types='ss tt pp', n_gnn_layers=4, n_heads=64, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=15, n_epochs=1, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=30, device='cuda')
-device = cuda
-  0%|          | 0/1 [00:00<?, ?it/s]  0%|          | 0/1 [00:56<?, ?it/s, avg_corr=0.7862, avg_corr_cosin=0.9671, avg_gap=21.2113, avg_init_cost=1947596.6333, avg_opt_cost=1607611.0333, epoch=0.0000, train_loss=0.0132, val_loss=0.0074]100%|██████████| 1/1 [00:56<00:00, 56.86s/it, avg_corr=0.7862, avg_corr_cosin=0.9671, avg_gap=21.2113, avg_init_cost=1947596.6333, avg_opt_cost=1607611.0333, epoch=0.0000, train_loss=0.0132, val_loss=0.0074]100%|██████████| 1/1 [00:56<00:00, 56.86s/it, avg_corr=0.7862, avg_corr_cosin=0.9671, avg_gap=21.2113, avg_init_cost=1947596.6333, avg_opt_cost=1607611.0333, epoch=0.0000, train_loss=0.0132, val_loss=0.0074]
-Best validation result
-avg_corr 0.7862 avg_corr_cosin 0.9671 avg_init_cost 1947596.6333 avg_opt_cost 1607611.0333 avg_gap 21.2113 train_loss 0.0132 val_loss 0.0074 epoch 0.0000 
-
-Best average gap result
-avg_corr 0.7862 avg_corr_cosin 0.9671 avg_init_cost 1947596.6333 avg_opt_cost 1607611.0333 avg_gap 21.2113 train_loss 0.0132 val_loss 0.0074 epoch 0.0000 
-

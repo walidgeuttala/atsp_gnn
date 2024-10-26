@@ -1,14 +1,0 @@
-Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=False, half_st=True, model='HetroGATConcat', input_dim=1, hidden_dim=128, output_dim=1, relation_types='ss tt pp', n_gnn_layers=4, n_heads=64, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=15, n_epochs=100, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=30, device='cuda')
-Namespace(atsp_size=100, data_path='../tsp_input/generated_insatnces_30_size_100', model_path='../atsp_model_train_result/Oct17_04-09-53_HetroGATConcat_trained_ATSP50/trial_0', time_limit=0.16, perturbation_moves=5, device='cuda')
-model: HetroGATConcat trained in ATSP50 for 100 and tested in ATSP100 for 30
-device = cuda
-  0%|          | 0/30 [00:00<?, ?it/s]  0%|          | 0/30 [00:00<?, ?it/s]
-(2450, 2)
-(2450, 1)
-Traceback (most recent call last):
-  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 162, in <module>
-    main(args_test)
-  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 70, in main
-    num_node1_nodes = G.num_nodes('node1')
-                      ^^^^^^^^^^^
-AttributeError: 'DiGraph' object has no attribute 'num_nodes'

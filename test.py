@@ -29,6 +29,8 @@ def main(args_test):
     print(args)
     print(args_test)
     args.atsp_size = args_test.atsp_size
+    args_test.relation_types = args.relation_types
+    args_test.half_st = args.half_st
     test_set = datasets.TSPDataset(f'{args_test.data_path}/test.txt', args)
     output_path = f'{args_test.model_path}/trial_0/test_atsp{args_test.atsp_size}'
     os.makedirs(output_path, exist_ok=True)
@@ -148,7 +150,7 @@ def main(args_test):
 if __name__ == '__main__':
     args_test = parse_args_test()
 
-    atsp_sizes = [1000]
+    atsp_sizes = [100, 150, 250, 500]
     data_path = args_test.data_path
     for atsp_size in atsp_sizes:
         args_test.atsp_size = atsp_size

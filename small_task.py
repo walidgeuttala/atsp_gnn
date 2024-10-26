@@ -1,76 +1,50 @@
-import os
-import networkx as nx
-import matplotlib.pyplot as plt
-import numpy as np
-from gnngls import  datasets
-import pickle
-# Define the folder path
-folder_path = '../tsp_lib_test_with_regret2/'
-plots_folder_path = os.path.join("", 'plots2_degree')
-value = 'weight'
-# Create the 'plots' directory if it doesn't exist
-os.makedirs(plots_folder_path, exist_ok=True)
-cnt = 0
-scalers = pickle.load(open("../tsp_lib_test_with_regret2/scalers.pkl", 'rb'))
-# Iterate through each file in the directory
-test_set = datasets.TSPDataset(folder_path+'train.txt')
-for filename in os.listdir(folder_path):
-    cnt += 1
-    if filename.endswith('.pkl'):
-        # Construct the full file path
-        if filename == "scalers.pkl":
-            continue
-        file_path = os.path.join(folder_path, filename)
-        
-        # Load the graph using networkx
-        graph = nx.read_gpickle(file_path)
-        H = test_set.get_test_scaled_features_not_samesize_graphs(graph)
-        # Get the number of nodes in the graph
-        num_nodes = graph.number_of_nodes()
-        
-        # Collect the 'regret' feature from each node
-        regret, _ = nx.attr_matrix(graph, value)
-        regret = scalers[value].inverse_transform(np.asarray(regret))
-        upper_tri = np.triu(regret, k=1)
+# Revised costs from the LaTeX table (from the "Revised Costs(M)" column)
+revised_costs = [
+    1.7575,  # ATSP 100, Revision 3
+    1.9619,  # ATSP 150, Revision 3
+    2.0604,  # ATSP 250, Revision 3
+    2.2355,  # ATSP 500, Revision 3
+    2.3469,  # ATSP 1000, Revision 3
+    1.7289,  # ATSP 100, Revision 6
+    1.9134,  # ATSP 150, Revision 6
+    2.0134,  # ATSP 250, Revision 6
+    2.2111,  # ATSP 500, Revision 6
+    2.3369,  # ATSP 1000, Revision 6
+    1.6995,  # ATSP 100, Revision 9
+    1.8906,  # ATSP 150, Revision 9
+    1.9988,  # ATSP 250, Revision 9
+    2.2037,  # ATSP 500, Revision 9
+    2.3301   # ATSP 1000, Revision 9
+]
 
-        # Extract the lower triangular part without the diagonal
-        lower_tri = np.tril(regret, k=-1)
+# Average optimal costs provided
+optimal_costs = {
+    100: 1.5613,
+    150: 1.6034,
+    250: 1.5621,
+    500: 1.5858,
+    1000: 1.5768
+}
 
-        # Combine the upper and lower triangular parts
-        combined = upper_tri + lower_tri
+# Function to calculate the percentage gap
+def calculate_gap_percentage(optimal_cost, revised_cost):
+    return ((revised_cost - optimal_cost) / optimal_cost) * 100
 
-        # Flatten the combined array and remove zeros
-        regret = combined[combined != 0].tolist()
-        #regret = regret.flatten().tolist()
+# List to store gaps for each ATSP size
+gaps = []
 
-        # Plot the distribution of the 'regret' feature
-        plt.figure()
-        plt.hist(regret, bins=20, edgecolor='black')
-        plt.title(f'Regret Distribution for {num_nodes} Nodes')
-        plt.xlabel('Regret')
-        plt.ylabel('Frequency')
-        
-        # Save the plot to a file in the 'plots' directory
-        plot_filename = f'regret_distribution_{num_nodes}_{cnt}.png'
-        plot_file_path = os.path.join(plots_folder_path, plot_filename)
-        plt.savefig(plot_file_path)
-        plt.close()
+# Iterate over ATSP sizes and calculate gaps
+atsp_sizes = [100, 150, 250, 500, 1000]
+revision_id = [3, 6, 9]
+# Gather gaps for each revision level
 
-        # SEcond plot
-        plt.figure()
-        plt.hist(regret, bins=20, edgecolor='black')
-        plt.title(f'Regret before Distribution for {num_nodes} Nodes')
-        plt.xlabel('Regret')
-        plt.ylabel('Frequency')
-        
-        # Save the plot to a file in the 'plots' directory
-        plot_filename = f'regret_distribution_{num_nodes}_{cnt}_before.png'
-        plot_file_path = os.path.join(plots_folder_path, plot_filename)
-        plt.savefig(plot_file_path)
-        plt.close()
-        
-        
-        print(f'Saved plot as {plot_filename}')
+for idx, size in enumerate(atsp_sizes):
+    idxx = 0
+    for revision in range(idx, 15, 5):  # Revising 3, 6, 9
+        gap = calculate_gap_percentage(optimal_costs[size], revised_costs[revision])
+        gaps.append((size, revision_id[idxx], gap))
+        idxx += 1
 
-
-
+# Print gaps
+for size, revision, gap in gaps:
+    print(f"ATSP size {size}, Revision {revision}: Gap = {gap:.2f}%")

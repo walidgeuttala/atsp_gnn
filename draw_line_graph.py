@@ -2,51 +2,67 @@ import networkx as nx
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-
+import dgl
 def optimized_line_graph(num_nodes, relation_types, output_dir="graphs"):
     # Create a random graph with num_nodes
     g = nx.complete_graph(num_nodes, create_using=nx.DiGraph())
 
-    n = num_nodes
-    m1 = n * (n - 1) * (n - 2) // 2
-    m2 = n * (n - 1) // 2
-
+    n = g.number_of_nodes()
+    m1 = n*(n-1)*(n-2)//2
+    m2 = n*(n-1)//2
+    half_st = False
     if 'ss' in relation_types:
         ss = torch.empty((m1, 2), dtype=torch.int32)
     if 'st' in relation_types:
-        st = torch.empty((m1, 2), dtype=torch.int32)
-    if 'ts' in relation_types:
-        ts = torch.empty((m1, 2), dtype=torch.int32)
+        if half_st:
+            st = torch.empty((m1, 2), dtype=torch.int32)
+        else:
+            st = torch.empty((m1*2, 2), dtype=torch.int32)
     if 'tt' in relation_types:
         tt = torch.empty((m1, 2), dtype=torch.int32)
     if 'pp' in relation_types:
         pp = torch.empty((m2, 2), dtype=torch.int32)
 
-    # Create edge_id map
     edge_id = {edge: idx for idx, edge in enumerate(g.edges())}
-
     idx = 0
     idx2 = 0
     for x in range(0, n):
-        for y in range(0, n - 1):
+        for y in range(0, n-1):
             if x != y:
-                for z in range(y + 1, n):
+                for z in range(y+1, n):
                     if x != z:
                         if 'ss' in relation_types:
                             ss[idx] = torch.tensor([edge_id[(x, y)], edge_id[(x, z)]], dtype=torch.int32)
                         if 'st' in relation_types:
-                            st[idx] = torch.tensor([edge_id[(x, y)], edge_id[(z, x)]], dtype=torch.int32)
-                        if 'ts' in relation_types:
-                            ts[idx] = torch.tensor([edge_id[(y, x)], edge_id[(x, z)]], dtype=torch.int32)
+                            if half_st:
+                                st[idx] = torch.tensor([edge_id[(x, y)], edge_id[(z, x)]], dtype=torch.int32)
+                            else:
+                                st[idx*2] = torch.tensor([edge_id[(x, y)], edge_id[(z, x)]], dtype=torch.int32)
+                                st[idx*2+1] = torch.tensor([edge_id[(y, x)], edge_id[(x, z)]], dtype=torch.int32)
                         if 'tt' in relation_types:
                             tt[idx] = torch.tensor([edge_id[(y, x)], edge_id[(z, x)]], dtype=torch.int32)
                         idx += 1
         if 'pp' in relation_types:
-            for y in range(x + 1, n):
+            for y in range(x+1, n):
                 pp[idx2] = torch.tensor([edge_id[(x, y)], edge_id[(y, x)]], dtype=torch.int32)
                 idx2 += 1
+    # edge_types = {}
 
-    # Create an empty NetworkX graph for the line graph (g2)
+    # if 'ss' in relation_types:
+    #     edge_types[('node1', 'ss', 'node1')] = (ss[:, 0], ss[:, 1])
+    # if 'st' in relation_types:
+    #     edge_types[('node1', 'st', 'node1')] = (st[:, 0], st[:, 1])
+    # if 'tt' in relation_types:
+    #     edge_types[('node1', 'tt', 'node1')] = (tt[:, 0], tt[:, 1])
+    # if 'pp' in relation_types:
+    #     edge_types[('node1', 'pp', 'node1')] = (pp[:, 0], pp[:, 1])
+
+    # g2 = dgl.heterograph(edge_types)
+
+    # g2 = dgl.add_reverse_edges(g2)
+
+    # g2.ndata['e'] = torch.tensor(list(edge_id.keys()))
+    
     g2 = nx.Graph()
 
     # Adding edges from different relation types
@@ -65,6 +81,8 @@ def optimized_line_graph(num_nodes, relation_types, output_dir="graphs"):
     if 'pp' in relation_types:
         for i in range(pp.size(0)):
             g2.add_edge(pp[i, 0].item(), pp[i, 1].item(), relation='pp')
+  
+    
 
     # Visualize and save the original graph
     plt.figure(figsize=(8, 8))
@@ -225,8 +243,8 @@ def print_connected_components_info(graph):
 
 
 # Example usage:
-num_nodes = 4  # Number of nodes in the graph
-relation_types = ['ss', 'st', 'tt', 'pp', 'ts']  # Define the types of relations to create
+num_nodes = 3  # Number of nodes in the graph
+relation_types = ['ss', 'st', 'tt', 'pp']  # Define the types of relations to create
 g = nx.complete_graph(num_nodes, create_using=nx.DiGraph())
 g, _ = optimized_line_graph(num_nodes, relation_types)
 print_connected_components_info(g)

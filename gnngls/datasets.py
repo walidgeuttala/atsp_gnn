@@ -103,7 +103,6 @@ def optimized_line_graph(g, args):
     if 'pp' in args.relation_types:
         edge_types[('node1', 'pp', 'node1')] = (pp[:, 0], pp[:, 1])
 
-  
     g2 = dgl.heterograph(edge_types)
 
     g2 = dgl.add_reverse_edges(g2)
@@ -127,8 +126,14 @@ class TSPDataset(torch.utils.data.Dataset):
             self.scalers = scalers['edges']
         else:
             self.scalers = scalers
+        if 'st' in args.relation_types:
+            if args.half_st:
+                graphs, _ = dgl.load_graphs(f"../tsp_input/graph_{args.atsp_size}_half_st.dgl")
+            else:
+                graphs, _ = dgl.load_graphs(f"../tsp_input/graph_{args.atsp_size}_full_st.dgl")
+        else:
+            graphs, _ = dgl.load_graphs(f"../tsp_input/graph_{args.atsp_size}_none_st.dgl")
 
-        graphs, _ = dgl.load_graphs(f"../tsp_input/hetero_graph_{args.atsp_size}.dgl")
         self.G = graphs[0]
         self.es = self.G.ndata['e'].cpu().numpy()
         # Transfer the Hetro to Homo

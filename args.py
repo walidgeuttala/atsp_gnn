@@ -16,7 +16,7 @@ def parse_args():
     parser.add_argument('--input_dim', type=int, default=1, help='Input feature dimension')
     parser.add_argument('--hidden_dim', type=int, default=128, help='Hidden feature dimension')
     parser.add_argument('--output_dim', type=int, default=1, help='Output feature dimension')
-    parser.add_argument('--relation_types', type=str, default='ss tt pp', help='Number of relation types')  
+    parser.add_argument('--relation_types', type=str, default='ss tt pp st', help='Number of relation types')  
     parser.add_argument('--n_gnn_layers', type=int, default=4, help='Number of GNN layers')
     parser.add_argument('--n_heads', type=int, default=64, help='Number of attention heads')
     parser.add_argument('--jk', type=str, default='cat', choices=['cat'])
@@ -39,7 +39,7 @@ def parse_args():
     args = parser.parse_args()
     
     return args
-
+#/project//p_gnn001/code/tsp/atsp_model_train_result/Oct17_04-09-53_HetroGATConcat_trained_ATSP50/trial_0/train_logs.txt
 def parse_args_test():
     parser = argparse.ArgumentParser(description='Test model')
     parser.add_argument('--atsp_size', type=int, default=100, help="Size of the atsp to be solved")
@@ -48,6 +48,8 @@ def parse_args_test():
     parser.add_argument('--time_limit', type=float, default=0.16, help='Time limit for the 2 opt search in seconds') 
     parser.add_argument('--perturbation_moves', type=int, default=5)
     parser.add_argument('--device', type=str, default='cuda', help="Number of gpu to be used")
+    parser.add_argument('--half_st', type=bool, default=False, help="add only source target graph half of it, ")
+    parser.add_argument('--relation_types', type=str, default='ss tt pp st', help='Number of relation types')  
 
     args = parser.parse_args()
 

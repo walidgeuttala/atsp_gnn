@@ -76,6 +76,26 @@ class HetroGATConcat(nn.Module):
             h2 = self.decision_layer(torch.cat([x for x in list(h2.values())], dim=1))
             return h2
 
+# Original
+class EdgePropertyPredictionModel0(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_gnn_layers=4, num_heads=16):
+    
+        super().__init__()
+        self.embed_layer = MLP(input_dim, hidden_dim, hidden_dim, skip=True)
+        self.message_passing_layers = dgl.nn.utils.Sequential(
+            *(AttentionLayer(hidden_dim, num_heads, hidden_dim*2) for _ in range(num_gnn_layers))
+        )
+        
+        self.decision_layer = MLP(hidden_dim, hidden_dim, output_dim)
+        
+    def forward(self, G, x):
+        h = self.embed_layer(x)
+        for l in self.message_passing_layers:
+            h = l(G, h)
+        h = self.decision_layer(h)
+        return h
+
+
 # Original+SC
 class EdgePropertyPredictionModel1(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_gnn_layers=4, num_heads=16):

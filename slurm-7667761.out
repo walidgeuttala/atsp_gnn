@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/project/p_gnn001/code/tsp/tsp_gnn/remove_extra_edges.py", line 5, in <module>
-    import dgl
-ModuleNotFoundError: No module named 'dgl'

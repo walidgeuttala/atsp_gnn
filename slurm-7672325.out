@@ -1,4 +1,0 @@
-  File "/project/p_gnn001/code/tsp/tsp_gnn/test.py", line 36
-    print(f"GPU Memory Allocated: {allocated_memory / (1024 ** 2):.2f} MB"), flush=True
-                                                                             ^^^^^^^^^^
-SyntaxError: invalid syntax. Maybe you meant '==' or ':=' instead of '='?

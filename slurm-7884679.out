@@ -1,6 +1,0 @@
-Traceback (most recent call last):
-  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 14, in <module>
-    from gnngls import datasets
-  File "/project/c_gnn_001/code/tsp/atsp_gnn/gnngls/__init__.py", line 6, in <module>
-    from matplotlib import colors
-ModuleNotFoundError: No module named 'matplotlib'
