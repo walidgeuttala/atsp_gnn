@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -A p_gnn001               # Account name to be debited
+#SBATCH -A c_gnn_001               # Account name to be debited
 #SBATCH --job-name=tsp3          # Job name
 #SBATCH --time=0-01:00:00        # Maximum walltime (30 minutes)
 #SBATCH --partition=gpu           # Select the ai partition

@@ -12,7 +12,7 @@ def parse_args():
     parser.add_argument('--half_st', type=bool, default=False, help="add only source target graph half of it, ")
 
     # Model parameters
-    parser.add_argument('--model', type=str, default='HetroGATConcat', help='set the model name to use')
+    parser.add_argument('--model', type=str, default='HetroGATSum', help='set the model name to use')
     parser.add_argument('--input_dim', type=int, default=1, help='Input feature dimension')
     parser.add_argument('--hidden_dim', type=int, default=128, help='Hidden feature dimension')
     parser.add_argument('--output_dim', type=int, default=1, help='Output feature dimension')
@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument('--min_delta', type=float, default=1e-4, help='Early stopping min delta')
     parser.add_argument('--patience', type=int, default=200, help='Early stopping patience')
     parser.add_argument('--batch_size', type=int, default=15, help='Batch size')
-    parser.add_argument('--n_epochs', type=int, default=1, help='Number of epochs')
+    parser.add_argument('--n_epochs', type=int, default=100, help='Number of epochs')
     parser.add_argument('--checkpoint_freq', type=int, default=10, help='Checkpoint frequency')
     parser.add_argument('--seed', type=int, default=4, help='Fix the seed of exprs')
     parser.add_argument('--n_trials', type=int, default=1, help='Number of model trials')

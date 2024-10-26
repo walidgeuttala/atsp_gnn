@@ -1,0 +1,8 @@
+DGL backend not selected or invalid.  Assuming PyTorch for now.
+Setting the default backend to "pytorch". You can change it in the ~/.dgl/config.json file or export the DGLBACKEND environment variable.  Valid options are: pytorch, mxnet, tensorflow (all lowercase)
+Traceback (most recent call last):
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 12, in <module>
+    from torch.utils.tensorboard import SummaryWriter
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/utils/tensorboard/__init__.py", line 1, in <module>
+    import tensorboard
+ModuleNotFoundError: No module named 'tensorboard'

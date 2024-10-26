@@ -78,9 +78,9 @@ def train(args, trial_id, run_name=None):
     criterion = torch.nn.MSELoss()
 
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, collate_fn=dgl.batch,
-                              num_workers=4, pin_memory=True)
+                              num_workers=8, pin_memory=True)
     val_loader = DataLoader(val_set, batch_size=args.batch_size, shuffle=True, collate_fn=dgl.batch,
-                            num_workers=4, pin_memory=True)
+                            num_workers=8, pin_memory=True)
 
     timestamp = datetime.datetime.now().strftime('%b%d_%H-%M-%S')
     if run_name == None:

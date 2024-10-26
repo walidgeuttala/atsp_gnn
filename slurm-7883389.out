@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 9, in <module>
+    import torch
+ModuleNotFoundError: No module named 'torch'
