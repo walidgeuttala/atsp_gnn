@@ -1,0 +1,19 @@
+/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/sklearn/base.py:376: InconsistentVersionWarning: Trying to unpickle estimator MinMaxScaler from version 1.3.0 when using version 1.5.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=False, half_st=False, model='HetroGATSum', input_dim=1, hidden_dim=128, output_dim=1, relation_types='ss tt pp', n_gnn_layers=4, n_heads=64, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=15, n_epochs=100, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=30, device='cuda')
+Traceback (most recent call last):
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 171, in <module>
+    best_val_result, best_avg_gap_result, run_name = train(args, trial_id, run_name)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 67, in train
+    train_set = datasets.TSPDataset(f'{args.data_dir}/train.txt', args)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/gnngls/datasets.py", line 159, in __init__
+    graphs, _ = dgl.load_graphs(f"../tsp_input/graph_{args.atsp_size}_none_st.dgl")
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/dgl/data/graph_serialize.py", line 186, in load_graphs
+    check_local_file_exists(filename)
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/dgl/data/graph_serialize.py", line 40, in check_local_file_exists
+    raise DGLError("File {} does not exist.".format(filename))
+dgl._ffi.base.DGLError: File ../tsp_input/graph_50_none_st.dgl does not exist.

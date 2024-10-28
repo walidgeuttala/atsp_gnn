@@ -21,6 +21,10 @@ from args import *
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+
+
+
+
 def main(args_test):
     params = json.load(open(f'{args_test.model_path}/params.json'))
     args = parse_args()
@@ -64,9 +68,12 @@ def main(args_test):
         H = test_set.get_scaled_features(G).to(args.device)
         x = H.ndata['weight']
         result['model_start_time'] = time.time()
+        
         with torch.no_grad():
             y_pred = model(H, x)
-        regret_pred = test_set.scalers['regret'].inverse_transform(y_pred.cpu().numpy())
+        
+        
+        regret_pred = features_transformed.reshape(-1, 1).cpu().numpy()
         for e, regret_pred_i in zip(test_set.es, regret_pred):
             G.edges[e]['regret_pred'] = np.maximum(regret_pred_i.item(), 0)
 
@@ -150,7 +157,7 @@ def main(args_test):
 if __name__ == '__main__':
     args_test = parse_args_test()
 
-    atsp_sizes = [100, 150, 250, 500]
+    atsp_sizes = [100]
     data_path = args_test.data_path
     for atsp_size in atsp_sizes:
         args_test.atsp_size = atsp_size

@@ -1,0 +1,47 @@
+/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/sklearn/base.py:376: InconsistentVersionWarning: Trying to unpickle estimator MinMaxScaler from version 1.3.0 when using version 1.5.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=False, half_st=False, model='HetroGATSum', input_dim=1, hidden_dim=128, output_dim=1, relation_types='ss tt pp', n_gnn_layers=4, n_heads=64, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=15, n_epochs=100, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=30, device='cuda')
+device = cuda
+  0%|          | 0/100 [00:00<?, ?it/s]  0%|          | 0/100 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 171, in <module>
+    best_val_result, best_avg_gap_result, run_name = train(args, trial_id, run_name)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 118, in train
+    result['train_loss'][epoch] = epoch_train(model, train_loader, criterion, optimizer, args.device)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 26, in epoch_train
+    for batch_i, batch in enumerate(train_loader):
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/utils/data/dataloader.py", line 630, in __next__
+    data = self._next_data()
+           ^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/utils/data/dataloader.py", line 1344, in _next_data
+    return self._process_data(data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/utils/data/dataloader.py", line 1370, in _process_data
+    data.reraise()
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/_utils.py", line 706, in reraise
+    raise exception
+TypeError: Caught TypeError in DataLoader worker process 0.
+Original Traceback (most recent call last):
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/utils/data/_utils/worker.py", line 309, in _worker_loop
+    data = fetcher.fetch(index)  # type: ignore[possibly-undefined]
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/utils/data/_utils/fetch.py", line 52, in fetch
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/utils/data/_utils/fetch.py", line 52, in <listcomp>
+    data = [self.dataset[idx] for idx in possibly_batched_index]
+            ~~~~~~~~~~~~^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/gnngls/datasets.py", line 175, in __getitem__
+    H = self.get_scaled_features(G)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/gnngls/datasets.py", line 192, in get_scaled_features
+    features_transformed = to_square_with_inf_diagonal(features_transformed)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/gnngls/datasets.py", line 131, in to_square_with_inf_diagonal
+    matrix[i, :i] = reshaped_tensor[i, :i]   # Elements before the diagonal
+    ~~~~~~^^^^^^^
+TypeError: can't assign a numpy.ndarray to a torch.FloatTensor
+

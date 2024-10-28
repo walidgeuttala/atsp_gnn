@@ -109,7 +109,43 @@ def optimized_line_graph(g, args):
 
     g2.ndata['e'] = torch.tensor(list(edge_id.keys()))
 
-    return g2    
+    return g2 
+
+
+import torch
+
+import time 
+import torch.nn.functional as F
+def to_square_with_inf_diagonal(tensor, n=50):
+    # Check the input tensor shape
+    expected_elements = n * (n - 1)
+    
+    # Reshape the tensor to [n, n-1]
+    reshaped_tensor = tensor.reshape(n, n - 1)
+    
+    # Create an [n, n] matrix filled with `inf`
+    matrix = torch.full((n, n), float('inf'))
+    
+    # Fill the off-diagonal entries
+    for i in range(n):
+        matrix[i, :i] = reshaped_tensor[i, :i]   # Elements before the diagonal
+        matrix[i, i+1:] = reshaped_tensor[i, i:] # Elements after the diagonal
+    
+    return matrix
+def remove_diagonal_and_flatten(matrix):
+    # Ensure the input is a square matrix
+    if matrix.shape[0] != matrix.shape[1]:
+        raise ValueError("Input must be a square matrix.")
+    
+    n = matrix.shape[0]
+    
+    # Create a mask for the off-diagonal elements
+    mask = ~torch.eye(n, dtype=bool)  # True for off-diagonal elements, False for diagonal
+    
+    # Select off-diagonal elements and reshape to (-1, 1)
+    off_diagonal_values = matrix[mask].reshape(-1, 1)
+    
+    return off_diagonal_values
 
 class TSPDataset(torch.utils.data.Dataset):
     def __init__(self, instances_file, args, scalers_file=None):
@@ -164,12 +200,14 @@ class TSPDataset(torch.utils.data.Dataset):
             features[idx] = G.edges[e]['weight']
             regret[idx] = G.edges[e]['regret']
             in_solution[idx] = G.edges[e]['in_solution']
-
         features_transformed = self.scalers['weight'].transform(features.reshape(-1, 1))
         regret_transformed = self.scalers['regret'].transform(regret.reshape(-1, 1))
-        
+        t = 0.0066
+        features_transformed = to_square_with_inf_diagonal(torch.tensor(features_transformed, dtype=torch.float32))
+        features_transformed  = F.softmax(- features_transformed / t, dim=1)
+
         H = self.G
-        H.ndata['weight'] = torch.tensor(features_transformed, dtype=torch.float32)
+        H.ndata['weight'] = remove_diagonal_and_flatten(features_transformed)
         H.ndata['regret'] = torch.tensor(regret_transformed, dtype=torch.float32)
         H.ndata['in_solution'] = in_solution.reshape(-1, 1)
 
