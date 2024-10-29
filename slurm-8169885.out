@@ -1,0 +1,5 @@
+/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/sklearn/base.py:376: InconsistentVersionWarning: Trying to unpickle estimator MinMaxScaler from version 1.3.0 when using version 1.5.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+/scratch/slurm/SlurmdSpoolDir/x1001c1s3b0n1/job8169885/slurm_script: line 40: 285769 Killed                  python test.py
+slurmstepd: error: Detected 1 oom-kill event(s) in StepId=8169885.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.

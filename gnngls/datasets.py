@@ -128,11 +128,11 @@ class TSPDataset(torch.utils.data.Dataset):
             self.scalers = scalers
         if 'st' in args.relation_types:
             if args.half_st:
-                graphs, _ = dgl.load_graphs(f"../tsp_input/graph_{args.atsp_size}_half_st.dgl")
+                graphs, _ = dgl.load_graphs("/project/p_gnn001/code/tsp/tsp_input/hetero_graph_1000.dgl")
             else:
-                graphs, _ = dgl.load_graphs(f"../tsp_input/graph_{args.atsp_size}_full_st.dgl")
+                graphs, _ = dgl.load_graphs("/project/p_gnn001/code/tsp/tsp_input/hetero_graph_1000.dgl")
         else:
-            graphs, _ = dgl.load_graphs(f"../tsp_input/graph_{args.atsp_size}_none_st.dgl")
+            graphs, _ = dgl.load_graphs("/project/p_gnn001/code/tsp/tsp_input/hetero_graph_1000.dgl")
 
         self.G = graphs[0]
         self.es = self.G.ndata['e'].cpu().numpy()

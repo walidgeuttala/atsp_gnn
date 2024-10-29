@@ -46,104 +46,104 @@ def optimized_line_graph(num_nodes, relation_types, output_dir="graphs"):
             for y in range(x+1, n):
                 pp[idx2] = torch.tensor([edge_id[(x, y)], edge_id[(y, x)]], dtype=torch.int32)
                 idx2 += 1
-    # edge_types = {}
+    edge_types = {}
 
-    # if 'ss' in relation_types:
-    #     edge_types[('node1', 'ss', 'node1')] = (ss[:, 0], ss[:, 1])
-    # if 'st' in relation_types:
-    #     edge_types[('node1', 'st', 'node1')] = (st[:, 0], st[:, 1])
-    # if 'tt' in relation_types:
-    #     edge_types[('node1', 'tt', 'node1')] = (tt[:, 0], tt[:, 1])
-    # if 'pp' in relation_types:
-    #     edge_types[('node1', 'pp', 'node1')] = (pp[:, 0], pp[:, 1])
-
-    # g2 = dgl.heterograph(edge_types)
-
-    # g2 = dgl.add_reverse_edges(g2)
-
-    # g2.ndata['e'] = torch.tensor(list(edge_id.keys()))
-    
-    g2 = nx.Graph()
-
-    # Adding edges from different relation types
     if 'ss' in relation_types:
-        for i in range(ss.size(0)):
-            g2.add_edge(ss[i, 0].item(), ss[i, 1].item(), relation='ss')
+        edge_types[('node1', 'ss', 'node1')] = (ss[:, 0], ss[:, 1])
     if 'st' in relation_types:
-        for i in range(st.size(0)):
-            g2.add_edge(st[i, 0].item(), st[i, 1].item(), relation='st')
-    if 'ts' in relation_types:
-        for i in range(ts.size(0)):
-            g2.add_edge(ts[i, 0].item(), ts[i, 1].item(), relation='ts')
+        edge_types[('node1', 'st', 'node1')] = (st[:, 0], st[:, 1])
     if 'tt' in relation_types:
-        for i in range(tt.size(0)):
-            g2.add_edge(tt[i, 0].item(), tt[i, 1].item(), relation='tt')
+        edge_types[('node1', 'tt', 'node1')] = (tt[:, 0], tt[:, 1])
     if 'pp' in relation_types:
-        for i in range(pp.size(0)):
-            g2.add_edge(pp[i, 0].item(), pp[i, 1].item(), relation='pp')
+        edge_types[('node1', 'pp', 'node1')] = (pp[:, 0], pp[:, 1])
+
+    g2 = dgl.heterograph(edge_types)
+
+    g2 = dgl.add_reverse_edges(g2)
+
+    g2.ndata['e'] = torch.tensor(list(edge_id.keys()))
+    
+    # g2 = nx.Graph()
+
+    # # Adding edges from different relation types
+    # if 'ss' in relation_types:
+    #     for i in range(ss.size(0)):
+    #         g2.add_edge(ss[i, 0].item(), ss[i, 1].item(), relation='ss')
+    # if 'st' in relation_types:
+    #     for i in range(st.size(0)):
+    #         g2.add_edge(st[i, 0].item(), st[i, 1].item(), relation='st')
+    # if 'ts' in relation_types:
+    #     for i in range(ts.size(0)):
+    #         g2.add_edge(ts[i, 0].item(), ts[i, 1].item(), relation='ts')
+    # if 'tt' in relation_types:
+    #     for i in range(tt.size(0)):
+    #         g2.add_edge(tt[i, 0].item(), tt[i, 1].item(), relation='tt')
+    # if 'pp' in relation_types:
+    #     for i in range(pp.size(0)):
+    #         g2.add_edge(pp[i, 0].item(), pp[i, 1].item(), relation='pp')
   
     
 
-    # Visualize and save the original graph
-    plt.figure(figsize=(8, 8))
-    pos = nx.spring_layout(g)
-    nx.draw(g, pos, with_labels=False, node_color='skyblue', node_size=500, edge_color='gray', font_size=15)
+    # # Visualize and save the original graph
+    # plt.figure(figsize=(8, 8))
+    # pos = nx.spring_layout(g)
+    # nx.draw(g, pos, with_labels=False, node_color='skyblue', node_size=500, edge_color='gray', font_size=15)
 
-    # Draw edge labels with offsets to prevent overlap
-    edge_labels = {edge: str(edge_id[edge]) for edge in g.edges()}
-    for edge in g.edges():
-        # Calculate the label position
-        x_offset = np.random.uniform(-0.1, 0.1)
-        y_offset = np.random.uniform(-0.1, 0.1)
-        x = (pos[edge[0]][0] + pos[edge[1]][0]) / 2 + x_offset
-        y = (pos[edge[0]][1] + pos[edge[1]][1]) / 2 + y_offset
-        plt.text(x, y, edge_labels[edge], fontsize=12, ha='center')
+    # # Draw edge labels with offsets to prevent overlap
+    # edge_labels = {edge: str(edge_id[edge]) for edge in g.edges()}
+    # for edge in g.edges():
+    #     # Calculate the label position
+    #     x_offset = np.random.uniform(-0.1, 0.1)
+    #     y_offset = np.random.uniform(-0.1, 0.1)
+    #     x = (pos[edge[0]][0] + pos[edge[1]][0]) / 2 + x_offset
+    #     y = (pos[edge[0]][1] + pos[edge[1]][1]) / 2 + y_offset
+    #     plt.text(x, y, edge_labels[edge], fontsize=12, ha='center')
 
-    plt.title("Original Graph")
-    plt.savefig(f"{output_dir}/original_graph.png")  # Save the original graph
-    plt.close()
+    # plt.title("Original Graph")
+    # plt.savefig(f"{output_dir}/original_graph.png")  # Save the original graph
+    # plt.close()
 
-    # Define edge colors for different relation types
-    edge_colors = {
-        'ss': 'red',
-        'st': 'green',
-        'tt': 'blue',
-        'pp': 'orange'
-    }
+    # # Define edge colors for different relation types
+    # edge_colors = {
+    #     'ss': 'red',
+    #     'st': 'green',
+    #     'tt': 'blue',
+    #     'pp': 'orange'
+    # }
 
-    # Visualize and save the line graphs for each type
-    for relation in relation_types:
-        plt.figure(figsize=(8, 8))
-        pos2 = nx.spring_layout(g2)
+    # # Visualize and save the line graphs for each type
+    # for relation in relation_types:
+    #     plt.figure(figsize=(8, 8))
+    #     pos2 = nx.spring_layout(g2)
         
-        # Draw the nodes
-        nx.draw_networkx_nodes(g2, pos2, node_color='lightgreen', node_size=500)
+    #     # Draw the nodes
+    #     nx.draw_networkx_nodes(g2, pos2, node_color='lightgreen', node_size=500)
         
-        # Draw edges based on relation type
-        edges = [(u, v) for u, v, d in g2.edges(data=True) if d['relation'] == relation]
-        nx.draw_networkx_edges(g2, pos2, edgelist=edges, edge_color=edge_colors.get(relation, 'black'), label=relation)
+    #     # Draw edges based on relation type
+    #     edges = [(u, v) for u, v, d in g2.edges(data=True) if d['relation'] == relation]
+    #     nx.draw_networkx_edges(g2, pos2, edgelist=edges, edge_color=edge_colors.get(relation, 'black'), label=relation)
         
-        nx.draw_networkx_labels(g2, pos2, font_size=15)
-        plt.title(f"Line Graph - Relation Type: {relation}")
-        plt.legend()
-        plt.savefig(f"{output_dir}/line_graph_{relation}.png")  # Save the line graph for this relation
-        plt.close()
+    #     nx.draw_networkx_labels(g2, pos2, font_size=15)
+    #     plt.title(f"Line Graph - Relation Type: {relation}")
+    #     plt.legend()
+    #     plt.savefig(f"{output_dir}/line_graph_{relation}.png")  # Save the line graph for this relation
+    #     plt.close()
 
-    # Visualize and save all types of edges in the same figure
-    plt.figure(figsize=(8, 8))
-    pos2 = nx.spring_layout(g2)
-    nx.draw_networkx_nodes(g2, pos2, node_color='lightgreen', node_size=500)
+    # # Visualize and save all types of edges in the same figure
+    # plt.figure(figsize=(8, 8))
+    # pos2 = nx.spring_layout(g2)
+    # nx.draw_networkx_nodes(g2, pos2, node_color='lightgreen', node_size=500)
     
-    # Draw all edges with their respective colors
-    for relation in relation_types:
-        edges = [(u, v) for u, v, d in g2.edges(data=True) if d['relation'] == relation]
-        nx.draw_networkx_edges(g2, pos2, edgelist=edges, edge_color=edge_colors.get(relation, 'black'), label=relation)
+    # # Draw all edges with their respective colors
+    # for relation in relation_types:
+    #     edges = [(u, v) for u, v, d in g2.edges(data=True) if d['relation'] == relation]
+    #     nx.draw_networkx_edges(g2, pos2, edgelist=edges, edge_color=edge_colors.get(relation, 'black'), label=relation)
 
-    nx.draw_networkx_labels(g2, pos2, font_size=15)
-    plt.title("Line Graph - All Relation Types")
-    plt.legend()
-    plt.savefig(f"{output_dir}/line_graph_all.png")  # Save the combined line graph
-    plt.close()
+    # nx.draw_networkx_labels(g2, pos2, font_size=15)
+    # plt.title("Line Graph - All Relation Types")
+    # plt.legend()
+    # plt.savefig(f"{output_dir}/line_graph_all.png")  # Save the combined line graph
+    # plt.close()
 
     return g2, edge_id
 
@@ -243,8 +243,12 @@ def print_connected_components_info(graph):
 
 
 # Example usage:
-num_nodes = 3  # Number of nodes in the graph
-relation_types = ['ss', 'st', 'tt', 'pp']  # Define the types of relations to create
+num_nodes = 100  # Number of nodes in the graph
+relation_types = ['ss', 'st', 'tt']  # Define the types of relations to create
 g = nx.complete_graph(num_nodes, create_using=nx.DiGraph())
 g, _ = optimized_line_graph(num_nodes, relation_types)
-print_connected_components_info(g)
+# print_connected_components_info(g)
+file_path = '../tsp_input/graph_atsp_1000_none_st.dgl'
+
+# Save the graph
+dgl.save_graphs(file_path, [g])

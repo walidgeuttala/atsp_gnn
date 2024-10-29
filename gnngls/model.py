@@ -115,6 +115,25 @@ class EdgePropertyPredictionModel1(nn.Module):
         h = self.decision_layer(h)
         return h
 
+
+import dgl
+import dgl.nn.pytorch as dglnn
+import torch
+import torch.nn as nn
+
+class GCNmodel(nn.Module):
+    def __init__(self, input_dim, hidden_dim, output_dim):
+        super(GCNmodel, self).__init__()
+        self.conv1 = dgl.nn.GraphConv(input_dim, hidden_dim)
+        self.conv2 = dgl.nn.GraphConv(hidden_dim, output_dim)
+
+    def forward(self, G, x):
+        h = F.relu(self.conv1(G, x))  # First layer with ReLU activation
+        h = self.conv2(G, h)           # Second layer (no activation)
+        return h  # Return the output embeddings
+
+
+
 # Original+kj
 class EdgePropertyPredictionModel2(nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_gnn_layers=4, num_heads=16, jk='cat'):

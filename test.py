@@ -150,7 +150,7 @@ def main(args_test):
 if __name__ == '__main__':
     args_test = parse_args_test()
 
-    atsp_sizes = [100, 150, 250, 500]
+    atsp_sizes = [500, 1000]
     data_path = args_test.data_path
     for atsp_size in atsp_sizes:
         args_test.atsp_size = atsp_size

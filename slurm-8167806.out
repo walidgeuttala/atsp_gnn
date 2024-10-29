@@ -1,0 +1,23 @@
+/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/sklearn/base.py:376: InconsistentVersionWarning: Trying to unpickle estimator MinMaxScaler from version 1.3.0 when using version 1.5.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=True, half_st=False, model='EdgePropertyPredictionModel2Optimized', input_dim=1, hidden_dim=64, output_dim=1, relation_types='ss tt pp', n_gnn_layers=4, n_heads=8, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=15, n_epochs=1, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=30, device='cuda')
+device = cuda
+  0%|          | 0/1 [00:00<?, ?it/s]  0%|          | 0/1 [00:18<?, ?it/s]
+Traceback (most recent call last):
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 171, in <module>
+    best_val_result, best_avg_gap_result, run_name = train(args, trial_id, run_name)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 118, in train
+    result['train_loss'][epoch] = epoch_train(model, train_loader, criterion, optimizer, args.device)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 34, in epoch_train
+    loss.backward()
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/_tensor.py", line 521, in backward
+    torch.autograd.backward(
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/autograd/__init__.py", line 289, in backward
+    _engine_run_backward(
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/autograd/graph.py", line 768, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: one of the variables needed for gradient computation has been modified by an inplace operation: [torch.cuda.FloatTensor [36750, 64]], which is output 0 of ReluBackward0, is at version 1; expected version 0 instead. Hint: enable anomaly detection to find the operation that failed to compute its gradient, with torch.autograd.set_detect_anomaly(True).
