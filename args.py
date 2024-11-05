@@ -8,17 +8,17 @@ def parse_args():
 
     # ATSP graph parameters
     parser.add_argument('--atsp_size', type=int, default=50, help="Size of the atsp to be solved")
-    parser.add_argument('--to_homo', type=bool, default=True, help="tranfer the pre-processed graph into homogines")
+    parser.add_argument('--to_homo', type=bool, default=False, help="tranfer the pre-processed graph into homogines")
     parser.add_argument('--half_st', type=bool, default=False, help="add only source target graph half of it, ")
 
     # Model parameters
-    parser.add_argument('--model', type=str, default='GCNmodel', help='set the model name to use')
+    parser.add_argument('--model', type=str, default='HetroGATSum', help='set the model name to use')
     parser.add_argument('--input_dim', type=int, default=1, help='Input feature dimension')
-    parser.add_argument('--hidden_dim', type=int, default=64, help='Hidden feature dimension')
+    parser.add_argument('--hidden_dim', type=int, default=16, help='Hidden feature dimension')
     parser.add_argument('--output_dim', type=int, default=1, help='Output feature dimension')
     parser.add_argument('--relation_types', type=str, default='ss tt pp', help='Number of relation types')  
-    parser.add_argument('--n_gnn_layers', type=int, default=4, help='Number of GNN layers')
-    parser.add_argument('--n_heads', type=int, default=8, help='Number of attention heads')
+    parser.add_argument('--n_gnn_layers', type=int, default=2, help='Number of GNN layers')
+    parser.add_argument('--n_heads', type=int, default=4, help='Number of attention heads')
     parser.add_argument('--jk', type=str, default='cat', choices=['cat'])
 
     # Hyper-parameter about the training/testing
@@ -42,14 +42,14 @@ def parse_args():
 #/project//p_gnn001/code/tsp/atsp_model_train_result/Oct17_04-09-53_HetroGATConcat_trained_ATSP50/trial_0/train_logs.txt
 def parse_args_test():
     parser = argparse.ArgumentParser(description='Test model')
-    parser.add_argument('--atsp_size', type=int, default=100, help="Size of the atsp to be solved")
-    parser.add_argument('--data_path', type=str, default=f'../tsp_input/generated_insatnces_30_size_', help='Dataset directory')
-    parser.add_argument('--model_path', default='../atsp_model_train_result/Oct29_00-26-22_GCNmodel_trained_ATSP50/trial_0', type=str)
+    parser.add_argument('--atsp_size', type=int, default=1000, help="Size of the atsp to be solved")
+    parser.add_argument('--data_path', type=str, default=f'/project/p_gnn001/code/tsp/tsp_input/generated_insatnces_100_size_', help='Dataset directory')
+    parser.add_argument('--model_path', default='../atsp_model_train_result/Oct31_02-09-46_HetroGATSum_trained_ATSP50/trial_0', type=str)
     parser.add_argument('--time_limit', type=float, default=0.16, help='Time limit for the 2 opt search in seconds') 
     parser.add_argument('--perturbation_moves', type=int, default=5)
     parser.add_argument('--device', type=str, default='cuda', help="Number of gpu to be used")
     parser.add_argument('--half_st', type=bool, default=False, help="add only source target graph half of it, ")
-    parser.add_argument('--relation_types', type=str, default='ss tt pp st', help='Number of relation types')  
+    parser.add_argument('--relation_types', type=str, default='ss tt pp', help='Number of relation types')  
 
     args = parser.parse_args()
 

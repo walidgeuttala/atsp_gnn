@@ -4,7 +4,7 @@
 #SBATCH --time=0-01:00:00        # Maximum walltime (30 minutes)
 #SBATCH --partition=cpu           # Select the ai partition
 ## --gres=gpu:1          # Request 1 to 4 GPUs per node
-#SBATCH --mem-per-cpu=40000       # Memory per CPU core (16 GB)
+#SBATCH --mem-per-cpu=80000       # Memory per CPU core (16 GB)
 #SBATCH --nodes=1               # Request 1 node
 
 # Optional directives
@@ -36,4 +36,4 @@
 # My best model is ../atsp_model_train_result/Oct07_01-45-55_HetroGAT_trained_ATSP50/trial_0/tral_0/test_atsp150/results.json
 
 #python test.py
-python create_transform_graph.py
+python load_graph.py

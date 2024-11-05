@@ -20,22 +20,22 @@ def print_gpu_memory(text):
     # Print the RAM usage in GB
     print(f"RAM used: {used_gb:.2f} GB", flush=True)
     print(f"RAM available: {free_gb:.2f} GB", flush=True)
-    # if torch.cuda.is_available():
-    #     # Get the allocated memory (used)
-    #     allocated_memory = torch.cuda.memory_allocated()
-    #     # Get the cached memory (reserved)
-    #     cached_memory = torch.cuda.memory_reserved()
-    #     # Get the total memory on the GPU
-    #     total_memory = torch.cuda.get_device_properties(0).total_memory
-    #     # Calculate free memory
-    #     free_memory = total_memory - allocated_memory - cached_memory
-    #     print(text, flush=True)
-    #     print(f"GPU Memory Allocated: {allocated_memory / (1024 ** 2):.2f} MB", flush=True)
-    #     print(f"GPU Memory Cached: {cached_memory / (1024 ** 2):.2f} MB", flush=True)
-    #     print(f"GPU Memory Free: {free_memory / (1024 ** 2):.2f} MB", flush=True)
-    #     print(f"Total GPU Memory: {total_memory / (1024 ** 2):.2f} MB", flush=True)
-    # else:
-    #     print("No GPU available.", flush=True)
+    if torch.cuda.is_available():
+        # Get the allocated memory (used)
+        allocated_memory = torch.cuda.memory_allocated()
+        # Get the cached memory (reserved)
+        cached_memory = torch.cuda.memory_reserved()
+        # Get the total memory on the GPU
+        total_memory = torch.cuda.get_device_properties(0).total_memory
+        # Calculate free memory
+        free_memory = total_memory - allocated_memory - cached_memory
+        print(text, flush=True)
+        print(f"GPU Memory Allocated: {allocated_memory / (1024 ** 2):.2f} MB", flush=True)
+        print(f"GPU Memory Cached: {cached_memory / (1024 ** 2):.2f} MB", flush=True)
+        print(f"GPU Memory Free: {free_memory / (1024 ** 2):.2f} MB", flush=True)
+        print(f"Total GPU Memory: {total_memory / (1024 ** 2):.2f} MB", flush=True)
+    else:
+        print("No GPU available.", flush=True)
 
 def calculate_statistics(tensors):
     stats = {}
@@ -65,9 +65,13 @@ def atsp_results(model, args, val_set):
         
         regret_pred = val_set.scalers['regret'].inverse_transform(y_pred.cpu().numpy())
         
-        for e, regret_pred_i in zip(val_set.es, regret_pred):
-            G.edges[e]['regret_pred'] = np.maximum(regret_pred_i.item(), 0)
-        
+        idx = 0
+        for idx_i in range(args.atsp_size):
+            for idx_j in range(args.atsp_size):
+                if idx_i == idx_j:
+                    continue
+                G.edges[(idx_i, idx_j)]['regret_pred'] = np.maximum(regret_pred[idx].item(), 0)
+                idx += 1
         opt_cost = gnngls.optimal_cost(G, weight='weight')
         
         init_tour = algorithms.nearest_neighbor(G, 0, weight='regret_pred')

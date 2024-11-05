@@ -2,8 +2,8 @@
 #SBATCH -A c_gnn_001               # Account name to be debited
 #SBATCH --job-name=tsp3          # Job name
 #SBATCH --time=0-02:10:00        # Maximum walltime (30 minutes)
-#SBATCH --partition=gpu           # Select the ai partition
-#SBATCH --gres=gpu:1       # Request 1 to 4 GPUs per node
+#SBATCH --partition=cpu           # Select the ai partition
+## --gres=gpu:1       # Request 1 to 4 GPUs per node
 #SBATCH --mem-per-cpu=80000       # Memory per CPU core (16 GB)
 #SBATCH --nodes=1               # Request 1 node
 

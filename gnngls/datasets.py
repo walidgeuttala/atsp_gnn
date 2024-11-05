@@ -116,6 +116,7 @@ class TSPDataset(torch.utils.data.Dataset):
         if not isinstance(instances_file, pathlib.Path):
             instances_file = pathlib.Path(instances_file)
         self.root_dir = instances_file.parent
+        self.atsp_size = args.atsp_size
         self.num_edges = args.atsp_size * (args.atsp_size-1)
         self.instances = [line.strip() for line in open(instances_file)]
 
@@ -126,19 +127,15 @@ class TSPDataset(torch.utils.data.Dataset):
             self.scalers = scalers['edges']
         else:
             self.scalers = scalers
-        if 'st' in args.relation_types:
-            if args.half_st:
-                graphs, _ = dgl.load_graphs("/project/p_gnn001/code/tsp/tsp_input/hetero_graph_1000.dgl")
-            else:
-                graphs, _ = dgl.load_graphs("/project/p_gnn001/code/tsp/tsp_input/hetero_graph_1000.dgl")
-        else:
-            graphs, _ = dgl.load_graphs("/project/p_gnn001/code/tsp/tsp_input/hetero_graph_1000.dgl")
+        
+        graphs, _ = dgl.load_graphs("../tsp_input/graph_1000_half_st.dgl")
 
         self.G = graphs[0]
-        self.es = self.G.ndata['e'].cpu().numpy()
-        # Transfer the Hetro to Homo
-        if args.to_homo:
-            self.G = dgl.to_homogeneous(self.G, ndata=['e'])
+        del self.G.ndata['e']
+
+        # # Transfer the Hetro to Homo
+        # if args.to_homo:
+        #     self.G = dgl.to_homogeneous(self.G, ndata=['e'])
 
         self.etypes = self.G.etypes
 
@@ -159,11 +156,15 @@ class TSPDataset(torch.utils.data.Dataset):
         features = torch.empty(self.num_edges, dtype=torch.float32)
         regret = torch.empty(self.num_edges, dtype=torch.float32)
         in_solution = torch.empty(self.num_edges, dtype=torch.float32)
-        
-        for idx, e in enumerate(self.es):
-            features[idx] = G.edges[e]['weight']
-            regret[idx] = G.edges[e]['regret']
-            in_solution[idx] = G.edges[e]['in_solution']
+        idx = 0
+        for idx_i in range(self.atsp_size):
+            for idx_j in range(self.atsp_size):
+                if idx_i == idx_j:
+                    continue
+                features[idx] = G.edges[(idx_i, idx_j)]['weight']
+                regret[idx] = G.edges[(idx_i, idx_j)]['regret']
+                in_solution[idx] = G.edges[(idx_i, idx_j)]['in_solution']
+                idx += 1
 
         features_transformed = self.scalers['weight'].transform(features.reshape(-1, 1))
         regret_transformed = self.scalers['regret'].transform(regret.reshape(-1, 1))

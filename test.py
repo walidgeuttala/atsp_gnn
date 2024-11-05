@@ -26,18 +26,22 @@ def main(args_test):
     args = parse_args()
     args = load_params(args, params)
     args.device = 'cuda'
-    print(args)
-    print(args_test)
+    print(args, flush=True)
+    print(args_test, flush=True)
     args.atsp_size = args_test.atsp_size
     args_test.relation_types = args.relation_types
     args_test.half_st = args.half_st
+    print_gpu_memory('before loading the dataset')
     test_set = datasets.TSPDataset(f'{args_test.data_path}/test.txt', args)
+    print_gpu_memory('after')
     output_path = f'{args_test.model_path}/trial_0/test_atsp{args_test.atsp_size}'
     os.makedirs(output_path, exist_ok=True)
     args.device = torch.device('cuda' if args.device  == 'cuda' and torch.cuda.is_available() else 'cpu')
     print(f'model: {args.model} trained in ATSP{args.atsp_size} for {args.n_epochs} and tested in ATSP{args_test.atsp_size} for {len(test_set.instances)}')
+    print_gpu_memory('before the model')
     model = get_model(args).to(args.device)
-    print('device =', args.device)
+    print_gpu_memory('after the model')
+    print('device =', args.device, flush=True)
 
     checkpoint = torch.load(f'{args_test.model_path}/checkpoint_best_val.pt', map_location=args.device)
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -58,18 +62,27 @@ def main(args_test):
         }
 
     for instance in pbar:
+        print_gpu_memory('before loading the orignal graph')
         with open(test_set.root_dir / instance, 'rb') as f:
             G = pickle.load(f)
-        opt_cost = gnngls.optimal_cost(G, weight='weight')        
+        opt_cost = gnngls.optimal_cost(G, weight='weight')
+        print_gpu_memory('after loading the orignal graph')        
         H = test_set.get_scaled_features(G).to(args.device)
+        print('after getting the H')
         x = H.ndata['weight']
         result['model_start_time'] = time.time()
+        print('before the grad')
         with torch.no_grad():
             y_pred = model(H, x)
+        print('after the grad')
         regret_pred = test_set.scalers['regret'].inverse_transform(y_pred.cpu().numpy())
-        for e, regret_pred_i in zip(test_set.es, regret_pred):
-            G.edges[e]['regret_pred'] = np.maximum(regret_pred_i.item(), 0)
-
+        idx = 0
+        for idx_i in range(args_test.atsp_size):
+            for idx_j in range(args_test.atsp_size):
+                if idx_i == idx_j:
+                    continue
+                G.edges[(idx_i, idx_j)]['regret_pred'] = np.maximum(regret_pred[idx].item(), 0)
+                idx += 1
         init_tour = algorithms.nearest_neighbor(G, 0, weight='regret_pred')
 
         result['total_model_time'] += (time.time() - result['model_start_time'])
@@ -150,7 +163,7 @@ def main(args_test):
 if __name__ == '__main__':
     args_test = parse_args_test()
 
-    atsp_sizes = [500, 1000]
+    atsp_sizes = [1000]
     data_path = args_test.data_path
     for atsp_size in atsp_sizes:
         args_test.atsp_size = atsp_size

@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import dgl
 
-def optimized_line_graph(g, relation_types = 'ss tt pp st', half_st = True):
+def optimized_line_graph(g, relation_types = 'ss tt pp', half_st = True):
     n = g.number_of_nodes()
     m1 = n*(n-1)*(n-2)//2
     m2 = n*(n-1)//2
@@ -64,7 +64,7 @@ def optimized_line_graph(g, relation_types = 'ss tt pp st', half_st = True):
 
 
 
-for num_nodes in [50, 100, 150, 250, 500]:
+for num_nodes in [1000]:
     g = nx.complete_graph(num_nodes, create_using=nx.DiGraph())
     g = optimized_line_graph(g)
 
