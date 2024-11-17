@@ -1,0 +1,40 @@
+/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/sklearn/base.py:376: InconsistentVersionWarning: Trying to unpickle estimator MinMaxScaler from version 1.3.0 when using version 1.5.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/utils/data/dataloader.py:557: UserWarning: This DataLoader will create 8 worker processes in total. Our suggested max number of worker in current system is 4, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(_create_warning_msg(
+Namespace(data_dir='../tsp_input/generated_insatnces_3000_size_50/', tb_dir='../atsp_model_train_result', atsp_size=50, to_homo=False, half_st=False, model='HetroGATSum', input_dim=1, hidden_dim=128, output_dim=1, relation_types='st', n_gnn_layers=4, n_heads=64, jk='cat', lr_init=0.001, lr_decay=0.95, min_delta=0.0001, patience=200, batch_size=15, n_epochs=5, checkpoint_freq=10, seed=4, n_trials=1, n_samples_result_train=30, device='cuda')
+device = cuda
+  0%|          | 0/5 [00:00<?, ?it/s]  0%|          | 0/5 [00:07<?, ?it/s]
+Traceback (most recent call last):
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 170, in <module>
+    best_val_result, best_avg_gap_result, run_name = train(args, trial_id, run_name)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 117, in train
+    result['train_loss'][epoch] = epoch_train(model, train_loader, criterion, optimizer, args.device)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/train.py", line 32, in epoch_train
+    y_pred = model(batch, x)
+             ^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/code/tsp/atsp_gnn/gnngls/model.py", line 34, in forward
+    h2 = gnn_layer(graph, h1)
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/dgl/nn/pytorch/hetero.py", line 210, in forward
+    dstdata = self._get_module((stype, etype, dtype))(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/project/c_gnn_001/conda_envs/cuda121/lib/python3.11/site-packages/dgl/nn/pytorch/hetero.py", line 156, in _get_module
+    return self.mod_dict[etype]
+           ~~~~~~~~~~~~~^^^^^^^
+KeyError: '_E'

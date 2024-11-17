@@ -116,6 +116,7 @@ class TSPDataset(torch.utils.data.Dataset):
         if not isinstance(instances_file, pathlib.Path):
             instances_file = pathlib.Path(instances_file)
         self.root_dir = instances_file.parent
+        self.atsp_size = args.atsp_size
         self.num_edges = args.atsp_size * (args.atsp_size-1)
         self.instances = [line.strip() for line in open(instances_file)]
 
@@ -126,19 +127,20 @@ class TSPDataset(torch.utils.data.Dataset):
             self.scalers = scalers['edges']
         else:
             self.scalers = scalers
-        if 'st' in args.relation_types:
-            if args.half_st:
-                graphs, _ = dgl.load_graphs(f"../tsp_input/graph_{args.atsp_size}_half_st.dgl")
-            else:
-                graphs, _ = dgl.load_graphs(f"../tsp_input/graph_{args.atsp_size}_full_st.dgl")
-        else:
-            graphs, _ = dgl.load_graphs(f"../tsp_input/graph_{args.atsp_size}_none_st.dgl")
+        
+        G = nx.read_gpickle(self.root_dir / self.instances[0])
+        lG = nx.line_graph(G)
+        lG = lG.to_undirected()
+        for n in lG.nodes:
+            lG.nodes[n]['e'] = n
 
-        self.G = graphs[0]
+        # why he add the id number of the edegs in the G graph
+        self.G = dgl.from_networkx(lG, node_attrs=['e'])
         self.es = self.G.ndata['e'].cpu().numpy()
-        # Transfer the Hetro to Homo
-        if args.to_homo:
-            self.G = dgl.to_homogeneous(self.G, ndata=['e'])
+
+        # # Transfer the Hetro to Homo
+        # if args.to_homo:
+        #     self.G = dgl.to_homogeneous(self.G, ndata=['e'])
 
         self.etypes = self.G.etypes
 
@@ -159,7 +161,6 @@ class TSPDataset(torch.utils.data.Dataset):
         features = torch.empty(self.num_edges, dtype=torch.float32)
         regret = torch.empty(self.num_edges, dtype=torch.float32)
         in_solution = torch.empty(self.num_edges, dtype=torch.float32)
-        
         for idx, e in enumerate(self.es):
             features[idx] = G.edges[e]['weight']
             regret[idx] = G.edges[e]['regret']

@@ -113,7 +113,6 @@ def train(args, trial_id, run_name=None):
     result['counter'] = 0
     ordered_keys = ['epoch', 'train_loss', 'val_loss', 'avg_gap', 'avg_init_cost', 'avg_opt_cost', 'avg_corr', 'avg_corr_cosin']
 
-
     for epoch in pbar:
         result['train_loss'][epoch] = epoch_train(model, train_loader, criterion, optimizer, args.device)
         result['val_loss'][epoch] = epoch_test(model, val_loader, criterion, args.device)

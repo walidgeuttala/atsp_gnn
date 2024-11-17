@@ -26,6 +26,6 @@ def find_lowest_val_loss(file_path):
 
 # Example usage:
 # file_path = "../atsp_model_train_result/Oct15_14-45-35_HetroGATConcat_trained_ATSP50/trial_0/train_logs.txt"
-file_path = "../atsp_model_train_result/Oct24_20-58-12_HetroGATSum_trained_ATSP50/trial_0/train_logs.txt"
+file_path = "../atsp_model_train_result/Nov05_20-33-03_EdgePropertyPredictionModel1_trained_ATSP50/trial_0/train_logs.txt"
 output = find_lowest_val_loss(file_path)
 print(f'{float(output[5])} {round(float(output[7]), 2)} {round(float(output[13])*100, 2)} {round(float(output[-1])*100, 2)}')
