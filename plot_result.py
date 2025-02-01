@@ -1,17 +1,17 @@
 import matplotlib.pyplot as plt
 
 # Sample data based on the table
-atsp_sizes = [100, 150, 250, 500, 1000]
-hetero_time_initial = [2.33, 4.45, 14.95, 82.46, None]
-hetero_time_final = [6.68, 6.25, 15.05, 82.88, None]
+atsp_sizes = [150, 250, 500, 1000]
+hetero_time_initial = [4.45, 14.95, 82.46, None]
+hetero_time_final = [6.25, 15.05, 82.88, None]
 
-matnet_time = [3.24, 4.24, 8.48, None, None]   # OOM for size 500 and 1000
-glop_time = [14.25, 13.99, 14.86, 17.06, 22.57] 
+matnet_time = [4.24, 8.48, None, None]   # OOM for size 500 and 1000
+glop_time = [13.99, 14.86, 17.06, 22.57] 
 
-matnet_gap_final = [1.84, 82.92, 181.68, None, None] # OOM for size 500 and 1000
-glop_gap_final = [8.85, 17.91, 27.96, 38.96, 47.77] 
-avg_gap_gnn = [11.49, 13.09, 13.04, 15.65, None]
-avg_gap_final = [2.20, 4.75, 7.82, 9.38, None]
+matnet_gap_final = [82.92, 181.68, None, None] # OOM for size 500 and 1000
+glop_gap_final = [17.91, 27.96, 38.96, 47.77] 
+avg_gap_gnn = [13.09, 13.04, 15.65, None]
+avg_gap_final = [4.75, 7.82, 9.38, None]
 
 # Create the first plot for execution time
 plt.figure(figsize=(14, 6))

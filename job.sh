@@ -26,4 +26,4 @@
 #Apr25_07-23-29_c9d520ac762949bca09ff5df493ede10    hetrov2 RGB4
 
 # python gnngls/datasets.py
-python remove_extra_edges.py
+python plot_result.py
