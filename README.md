@@ -93,22 +93,11 @@ bash scripts/run_experiments.sh
 
 **Academic Use Only**: Non-commercial research purposes. Contact authors for other use cases.
 
-## 📚 Citation (WIP)
-
-```bibtex
-@article{yourname2024heterogeneous,
-  title={Heterogeneous Line Graph for Asymmetric TSP Solutions with GNNs},
-  author={Your Name and Coauthors},
-  journal={Under Review},
-  year={2024}
-}
-```
 
 ## 📬 Contact
 
 **Your Name**  
-✉️ your.email@example.com  
-🔗 [Lab Website](https://your-lab-site.com)
+✉️ guettalawalid@inf.elte.hu  
 
 ## 🧪 Example Run
 
