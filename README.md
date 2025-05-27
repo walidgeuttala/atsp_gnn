@@ -1,75 +1,127 @@
-# Graph Neural Network Guided Local Search for the Traveling Salesperson Problem
+# Heterogeneous Graph Neural Networks for Scalable Asymmetric Traveling Salesman Problem Optimization
 
-Code accompanying the paper [Graph Neural Network Guided Local Search for the Traveling Salesperson Problem](https://arxiv.org/abs/2110.05291).
+**Graph Neural Network-based Framework for Solving ATSP Efficiently**
 
-Want to skip straight to [the example](https://github.com/proroklab/gnngls#minimal-example)?
+This repository implements a novel three-stage pipeline for solving the Asymmetric Traveling Salesman Problem (ATSP) using Graph Neural Networks (GNNs). Our approach scales better and performs more accurately than previous GNN-based models on non-Euclidean TSP variants.
 
-## Setup
-We uploaded the test datasets and models using [git lfs](https://git-lfs.github.com/). You must install it to clone the repo correctly.
+## 🚀 Results Summary
 
-1. Install [git lfs](https://git-lfs.github.com/)
-2. Install [pipenv](https://pipenv.pypa.io)
-3. Clone the repo
-4. Navigate to the repo and run `pipenv install` in the root directory
-5. Run `pipenv shell` to activate the environment
+- ⏱️ **98% faster training** (1h vs. 55h) compared to GLOP  
+- ✅ **29.58% reduction in optimality gap** on ATSP500 (9.38% vs. 38.96%)  
+- ⚡ Inference time comparable to GLOP (15.05s vs. 14.86s on ATSP250)
 
-## Datasets
-The test datasets used in the paper are found in [data](https://github.com/proroklab/gnngls/tree/master/data).
+## 🛠️ Installation
 
-You can also generate new datasets in two steps: instance generation and preprocessing. You can generate solved TSP instances using:
-```
-./generate_instances.py <number of instances to generate> <number of nodes> <dataset directory>
-```
+### Requirements
 
-The specified directory is created. Each instance is a pickled `networkx.Graph`.
+- Python ≥ 3.8  
+- PyTorch ≥ 1.10  
+- DGL ≥ 0.9  
+- NumPy, SciPy, tqdm
 
-Then, prepare the dataset using:
-```
-./preprocess_dataset.py <dataset directory>
-```
-This splits the dataset into training, validation, and test sets written to `train.txt`, `val.txt`, and `test.txt` respectively. It also fits a scaler to the training set.
+### Setup
 
-After this step, the datasets can be easily manipulated using `gnngls.TSPDataset`. For example, in [train.py](https://github.com/ben-hudson/gnngls/blob/master/scripts/train.py#L89).
-
-## Training
-Train the model using:
-```
-./train.py <dataset directory> <tensorboard directory> --use_gpu
-```
-The default optional arguments are those used in the paper. A new directory will be created under the specified Tensorboard directory, and checkpoints and training progress will be written there.
-
-## Testing
-Evaluate the model using:
-```
-./test.py <dataset directory>/test.txt <checkpoint path> <run directory> regret_pred --use_gpu
-```
-The default optional arguments are those used in the paper. The search progress for all instances in the dataset will be written to the specified run directory as a pickled `pandas.DataFrame`.
-
-For example, you can run the pretrained model using:
-```
-./test.py ../data/tsp100/test.txt ../models/tsp20/checkpoint_best_val.pt ../runs regret_pred --use_gpu
+```bash
+git clone https://github.com/your-username/atsp-gnn.git
+cd atsp-gnn
+pip install torch dgl numpy scipy tqdm
 ```
 
-## Minimal Example
-The following is a simple demonstration to help you get started 🙂
+## 📂 Project Structure
+
 ```
-pipenv install
-pipenv shell
-cd scripts
-python generate_instances.py 500 10 data
-python preprocess_dataset.py data --n_train 400 --n_val 50 --n_test 50
-python train.py data models --use_gpu
-python test.py data/test.txt models/<new model directory>/checkpoint_best_val.pt runs regret_pred --use_gpu
+.
+├── configs/                # YAML configuration files
+├── data/                   # Dataset and ATSP instances
+├── models/                 # Saved model checkpoints
+├── scripts/                # Helper scripts (data gen, experiments)
+├── tours/                  # Generated and ground-truth tours
+├── train.py                # Training script
+├── infer.py                # Inference (tour generation)
+├── evaluate.py             # Evaluation metrics
+└── README.md               # Project documentation
 ```
 
-## Citation
-If you this code is useful in your research, please cite our paper:
+## 🔄 Usage
+
+### 1. Generate Synthetic Data
+
+```bash
+python scripts/generate_atsp.py --nodes 500 --seed 42
 ```
-@inproceedings{hudson2022graph,
-    title={Graph Neural Network Guided Local Search for the Traveling Salesperson Problem},
-    author={Benjamin Hudson and Qingbiao Li and Matthew Malencia and Amanda Prorok},
-    booktitle={International Conference on Learning Representations},
-    year={2022},
-    url={https://openreview.net/forum?id=ar92oEosBIg}
+
+### 2. Train Model
+
+```bash
+python train.py   --data_dir data/atsp_instances   --model_type het_gat_concat   --epochs 100   --batch_size 32
+```
+
+### 3. Inference - Generate Tours
+
+```bash
+python infer.py   --checkpoint models/het_gat_concat_best.pth   --instance data/atsp500_instance_1.npy   --output tours/predicted_tour.json
+```
+
+### 4. Evaluate Tour Quality
+
+```bash
+python evaluate.py   --ground_truth tours/optimal_tours   --predictions tours/predicted_tour.json
+```
+
+## ⚙️ Configuration
+
+Edit parameters in `configs/config_gnn.yaml`:
+
+```yaml
+hidden_dim: 128
+attention_heads: 4
+learning_rate: 0.001
+batch_size: 32
+dropout: 0.2
+```
+
+## 🔁 Reproduce Full Experiments
+
+1. Place ATSPLIB benchmark instances into `data/atsp_benchmarks/`  
+2. Run:
+
+```bash
+bash scripts/run_experiments.sh
+```
+
+## 📜 License
+
+**Academic Use Only**: Non-commercial research purposes. Contact authors for other use cases.
+
+## 📚 Citation (WIP)
+
+```bibtex
+@article{yourname2024heterogeneous,
+  title={Heterogeneous Line Graph for Asymmetric TSP Solutions with GNNs},
+  author={Your Name and Coauthors},
+  journal={Under Review},
+  year={2024}
 }
+```
+
+## 📬 Contact
+
+**Your Name**  
+✉️ your.email@example.com  
+🔗 [Lab Website](https://your-lab-site.com)
+
+## 🧪 Example Run
+
+```bash
+# Prepare data
+python scripts/generate_atsp.py --nodes 250 --seed 123
+
+# Train
+python train.py --data_dir data/atsp_instances --model_type het_gat_concat
+
+# Inference
+python infer.py --checkpoint models/best_model.pth --instance data/atsp_instance.npy --output out.json
+
+# Evaluate
+python evaluate.py --ground_truth data/gt_tours --predictions out.json
 ```
