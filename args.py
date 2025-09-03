@@ -40,11 +40,12 @@ def parse_args():
     
     return args
 #/project//p_gnn001/code/tsp/atsp_model_train_result/Oct17_04-09-53_HetroGATConcat_trained_ATSP50/trial_0/train_logs.txt
+# ../atsp_model_train_result/Oct24_01-25-08_HetroGATSum_trained_ATSP50/trial_0/checkpoint_best_val.pt
 def parse_args_test():
     parser = argparse.ArgumentParser(description='Test model')
     parser.add_argument('--atsp_size', type=int, default=100, help="Size of the atsp to be solved")
     parser.add_argument('--data_path', type=str, default=f'../tsp_input/generated_insatnces_30_size_', help='Dataset directory')
-    parser.add_argument('--model_path', default='../atsp_model_train_result/Oct17_04-09-53_HetroGATConcat_trained_ATSP50/trial_0', type=str)
+    parser.add_argument('--model_path', default='../atsp_model_train_result/Oct24_20-58-12_HetroGATSum_trained_ATSP50/trial_0', type=str)
     parser.add_argument('--time_limit', type=float, default=0.16, help='Time limit for the 2 opt search in seconds') 
     parser.add_argument('--perturbation_moves', type=int, default=5)
     parser.add_argument('--device', type=str, default='cuda', help="Number of gpu to be used")

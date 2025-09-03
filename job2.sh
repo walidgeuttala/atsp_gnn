@@ -37,5 +37,6 @@
 
 # best results model that I used in the 64 size is the sum in the paper ../model_result_try/Jul13_16-09-51_6937d04a2f2f4c90b92ad923ed0d8304/checkpoint_best_val.pt
 
-python test.py
+# python test.py
 #python test.py
+python test.py 

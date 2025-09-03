@@ -72,9 +72,9 @@ def optimized_line_graph(num_nodes, relation_types, output_dir="graphs"):
     if 'st' in relation_types:
         for i in range(st.size(0)):
             g2.add_edge(st[i, 0].item(), st[i, 1].item(), relation='st')
-    if 'ts' in relation_types:
-        for i in range(ts.size(0)):
-            g2.add_edge(ts[i, 0].item(), ts[i, 1].item(), relation='ts')
+    # if 'ts' in relation_types:
+    #     for i in range(ts.size(0)):
+    #         g2.add_edge(ts[i, 0].item(), ts[i, 1].item(), relation='ts')
     if 'tt' in relation_types:
         for i in range(tt.size(0)):
             g2.add_edge(tt[i, 0].item(), tt[i, 1].item(), relation='tt')
@@ -243,7 +243,7 @@ def print_connected_components_info(graph):
 
 
 # Example usage:
-num_nodes = 3  # Number of nodes in the graph
+num_nodes = 5  # Number of nodes in the graph
 relation_types = ['ss', 'st', 'tt', 'pp']  # Define the types of relations to create
 g = nx.complete_graph(num_nodes, create_using=nx.DiGraph())
 g, _ = optimized_line_graph(num_nodes, relation_types)
