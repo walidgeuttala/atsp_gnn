@@ -1,0 +1,33 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual env / Pipenv
+Pipfile.lock
+.venv/
+.env/
+
+# Data
+data/raw/
+data/processed/
+*.pkl
+*.pt
+*.npy
+*.npz
+
+# Models
+saved_models/
+
+# Results
+results/*
+!results/README.md
+
+# Jobs logs
+jobs/*.out
+jobs/*.err
+slurm-*.out
+
+# IDE
+.vscode/
+.idea/

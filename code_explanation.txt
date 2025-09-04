@@ -25,3 +25,11 @@ test.py for testing the model in some ATSP size
 train.py  training for the given model on ATSP size 
 tsp_solving.py for solving the ATSP for calcualting the regret
 utils.py some functions for utils that is it  
+in gnnls folder there is files which they are 
+init.py which are some utils used in the other python code in this gnngls 
+algorthims.py having the method of guided local search Nearest Neighbor
+dataset.py contain the dataset class and the function that create the line graph transofmration that are in other files that are outside the gnngls some common functions it seem that are repeated and unfficinet way 
+model_utils.py conatins some common function that are used in model.py , as model.py conatins different models types 
+model.py conatins models like HetroGATSum HetroGATConcat EdgePropertyPredictionModel0 EdgePropertyPredictionModel1 EdgePropertyPredictionModel2 EdgePropertyPredictionModel3 and function get_model given the papramter you will get the model you want 
+operators.py contains the function about the 2 opt functions 
+
