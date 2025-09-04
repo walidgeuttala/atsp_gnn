@@ -1,0 +1,27 @@
+adding_regret_matrix.py it is function only that could add regret fake values of 0 to the data files, which is not needed any more, but the funtion could be added into the utils file 
+args.py have paramter used to training and testing the model should be kept next to the file training and testing 
+atsp_solve_GLOP_format.py used for lading the dataset already exisits, and solving it using LKH-3 to be used for the testing, as you know the testing files and training files ATSP, are different where the training one contain, or we need to calculate the regret true values for the edges which is expensive operation to do, for now the solution I added fake 0s into the adding_regret_matrix.py but that is not the solution I should calculate the true ones in the future maybe for future analysis of the results, also keep in mind the dataset used from GLOP repo that is outside the current atsp_gnn repo that we are working on (../GLOP/data/)
+atsp_solve_MatNet_format.py it seem the same as atsp_solve_GLOP_format.py, the difference it uses another dataset, which they should be mergered together and even have this common function into the utlis or smth 
+atsp_solve.py same uses another dataset they are almost identical code with dataset differences maybe the data input ds little different how to read and where to store that is is 
+create_transform_graph.py used for creating the sub graphs here it is optimzed as you know we work in complet graphs the transfomration of the instance how the thye look with our uniaue code of line graph are the same for same size graphs, so for each size we save such transoformation to be used efficintly when we train or test the given input dataset 
+data_utlis.py just some common used utils for the data code files
+draw_line_graph.py same as create_transform_graph.py where here we have 2 function for optimized line graph transofmration that have different efficncy, and here we have more better optimized second version of line graph code that runes faster that is it and also checking the connceted compoent function that could be used in data utilis 
+find_best_val_loss.py is just function that could help me find the lowest validation loss got during training of the logs output file as we have long file output to follow, so I can't follow or eread it manualy 
+generate_instances.py generate the instances of the ATSPs given the atsp size by generating the weights and stuff 
+grid_seach.py is jsut simple function to help me find the best model with brute force solution for some hyperparameters 
+job.sh are other job2 and job2 are just script code for runing the code one is for the gpu the other for cpu version 
+model.py is just models code for the Directed GNN model that defines it I took this from another repo code of github paper
+model_test.py testing if the models works here I defined another format of models are taken from another repo code of paper model called RGCN4
+plot_result.py helps me to create plot for given results I have that I dont import but state in array and it tries to plot for Execution time and solution quality for ATSP across problem sizes (150, 250, 500, 1000) for GLOP, MAtNet and out hl(g) model with 2 figures next to each othter
+preprocesss_dataset.py used after creating the ATSP dataset to divide it into train validiate and test dataset and normalizing the weights and the regret values of the edges 
+remove_extra_edges.py have optimized creating the line graph for given size ATSP 
+setup.py is just from setuptools import setup for the repo which I think is not needed really 
+slurm_{id}.out is the output of the runining job.sh files 
+small_task.py used function that help to given results of repo GLOP I get to transfer them and calcualte the gap percentage of them as the original repo of them don't do that 
+small_task.py for ploting dist of regret of given atsp size how it looks like and saving the png file 
+test_rerget.py used to test import tsp instances and read them , this is jsut to check them 
+test_tsp_solving.py have function for create_tsplib95_string
+test.py for testing the model in some ATSP size 
+train.py  training for the given model on ATSP size 
+tsp_solving.py for solving the ATSP for calcualting the regret
+utils.py some functions for utils that is it  

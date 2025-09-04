@@ -1,5 +1,0 @@
-usage: test.py [-h] [--atsp_size ATSP_SIZE] [--data_path DATA_PATH]
-               [--model_path MODEL_PATH] [--time_limit TIME_LIMIT]
-               [--perturbation_moves PERTURBATION_MOVES] [--device DEVICE]
-               [--half_st HALF_ST] [--relation_types RELATION_TYPES]
-test.py: error: unrecognized arguments: ../generated_insatnces_1000_size_100/test.txt ../atsp_model_train_result/Oct24_01-25-08_HetroGATSum_trained_ATSP50/trial_0/checkpoint_best_val.pt ../runs_lib_19_regret2 regret_pred ../output_ATSP_trained_50_size_samples_1000_size_100 --use_gpu

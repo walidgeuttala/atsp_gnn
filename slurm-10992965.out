@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "plot_result.py", line 1, in <module>
-    import matplotlib.pyplot as plt
-ModuleNotFoundError: No module named 'matplotlib'
