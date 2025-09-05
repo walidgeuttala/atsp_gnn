@@ -13,6 +13,7 @@ import linecache
 import os
 import json
 
+# The orignal code for the GNNLS for for the TSP case
 def get_solved_instances(n_nodes, n_instances):
     for _ in range(n_instances):
         G = nx.Graph()
@@ -121,19 +122,18 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Generate a dataset.')
     parser.add_argument('n_samples', type=int)
     parser.add_argument('n_nodes', type=int)
-    parser.add_argument('input_dir', type=str)
-    parser.add_argument('output_dir', type=pathlib.Path)
+    parser.add_argument('dir', type=pathlib.Path)
     args = parser.parse_args()
 
     
-    args.output_dir.mkdir(parents=True, exist_ok=True)
+    args.dir.mkdir(parents=True, exist_ok=True)
 
     pool = mp.Pool(processes=None)
     instance_gen = get_solved_instances3(args.n_nodes, args.n_samples, args.input_dir)
     # Process and save instances
     try:
         for G in pool.imap_unordered(utils.prepare_instance, instance_gen):
-            output_file = args.output_dir / f'{uuid.uuid4().hex}.pkl'
+            output_file = args.dir / f'{uuid.uuid4().hex}.pkl'
             nx.write_gpickle(G, output_file)
     except Exception as e:
         print(f"Error occurred during processing: {e}")
