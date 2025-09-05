@@ -6,24 +6,17 @@ import itertools
 import multiprocessing as mp
 import pathlib
 import uuid
-
 import networkx as nx
 import numpy as np
-
-import gnngls
-from gnngls import datasets
-
+from . import utils
 import linecache
-
-def prepare_instance(G):
-    datasets.set_features(G)
-    datasets.set_labels2(G)
-    return G
+import os
+import json
 
 def get_solved_instances(n_nodes, n_instances):
     for _ in range(n_instances):
         G = nx.Graph()
-
+        
         coords = np.random.random((n_nodes, 2))
         for n, p in enumerate(coords):
             G.add_node(n, pos=p)
@@ -68,10 +61,6 @@ def get_solved_instances2(n_nodes, n_instances, all_instances):
         if opt_cost != cost:
             print('does not match opt_cost:{opt_cost} cost:{cost}')
         yield G
-
-import networkx as nx
-import os
-import json
 
 # reading the new data format from json, jsut for testing
 def get_solved_instances3(n_nodes, n_instances, all_instances):
@@ -143,7 +132,7 @@ if __name__ == '__main__':
     instance_gen = get_solved_instances3(args.n_nodes, args.n_samples, args.input_dir)
     # Process and save instances
     try:
-        for G in pool.imap_unordered(prepare_instance, instance_gen):
+        for G in pool.imap_unordered(utils.prepare_instance, instance_gen):
             output_file = args.output_dir / f'{uuid.uuid4().hex}.pkl'
             nx.write_gpickle(G, output_file)
     except Exception as e:
