@@ -11,7 +11,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--atsp_size', type=int, default=10)
     parser.add_argument('--relation_types', nargs='+', default=['ss', 'st', 'tt', 'pp'])
     parser.add_argument('--undirected', action='store_true', help='Use undirected graphs (PyG only)')
-    
+    parser.add_argument('--hetro', action='store_true', help='Use heterogeneous graph')
     # Model/training arguments
     parser.add_argument('--model', type=str, default='gcn')
     parser.add_argument('--batch_size', type=int, default=32)
@@ -20,6 +20,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('--lr_decay', type=float, default=0.99)
     parser.add_argument('--patience', type=int, default=20)
     parser.add_argument('--min_delta', type=float, default=1e-6)
+    parser.add_argument('--jk', type=str, default=None, choices=[None, 'cat', 'max', 'lstm'], help='Jumping knowledge mode')
+    parser.add_argument('--skip_connection', action='store_true', help='Enable skip connections')
+    parser.add_argument('--agg', type=str, default='sum', choices=['sum', 'stack', 'concat'], help='Aggregation for HetroGAT')
     
     # Infrastructure
     parser.add_argument('--device', type=str, default='cuda')

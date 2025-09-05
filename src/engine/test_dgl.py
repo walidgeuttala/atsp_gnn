@@ -7,9 +7,9 @@ import torch
 import pickle
 import tqdm
 
-from ..data.datasets_dgl import ATSPDatasetDGL
-from ..algorithms import guided_local_search, nearest_neighbor
-from ..utils import tour_cost, optimal_cost
+from data.datasets_dgl import ATSPDatasetDGL
+from utils.algorithms import guided_local_search, nearest_neighbor
+from utils import tour_cost, optimal_cost
 
 
 class ATSPTesterDGL:
