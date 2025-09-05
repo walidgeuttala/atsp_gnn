@@ -1,4 +1,6 @@
+import itertools
 import numpy as np
+
 INF = 1000000
 
 

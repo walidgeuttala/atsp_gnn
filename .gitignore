@@ -16,9 +16,6 @@ data/processed/
 *.npy
 *.npz
 
-# Models
-saved_models/
-
 # Results
 results/*
 !results/README.md
@@ -31,3 +28,8 @@ slurm-*.out
 # IDE
 .vscode/
 .idea/
+
+LKH-3.0.9
+saved_model
+saved_dataset
+
