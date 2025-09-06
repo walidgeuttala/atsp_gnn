@@ -1,13 +1,13 @@
 import json
 import time
 import os
-from typing import Dict, Any
+from typing import Dict, Any, Callable
 import numpy as np
 import torch
 import pickle
 import tqdm
 
-from data.datasets_pyg import ATSPDatasetPyG
+from data.dataset_pyg import ATSPDatasetPyG
 from utils.algorithms import guided_local_search, nearest_neighbor
 from utils.atsp_utils import tour_cost, optimal_cost
 
@@ -15,36 +15,45 @@ from utils.atsp_utils import tour_cost, optimal_cost
 class ATSPTesterPyG:
     """Testing manager for PyG-based ATSP models with Guided Local Search."""
     
-    def __init__(self, args):
+    def __init__(self, args, get_model_fn: Callable = None):
         self.args = args
         self.device = torch.device('cuda' if args.device == 'cuda' and torch.cuda.is_available() else 'cpu')
+        self.get_model_fn = get_model_fn  # Model factory function
     
-    def load_model(self, model_class, checkpoint_path: str):
-        """Load trained model from checkpoint."""
-        # Load training parameters
-        params_path = os.path.dirname(checkpoint_path) + '/params.json'
-        with open(params_path, 'r') as f:
-            train_params = json.load(f)
+    def load_model_from_checkpoint(self, checkpoint_path: str):
+        """Load trained model from checkpoint using model factory."""
+        # Load checkpoint
+        checkpoint = torch.load(checkpoint_path, map_location=self.device)
         
-        # Create model with training parameters
-        model = model_class(train_params).to(self.device)
+        # Get training args from checkpoint
+        train_args = checkpoint.get('args', {})
+        
+        # Create model using factory function
+        if self.get_model_fn is None:
+            raise ValueError("No model factory function provided")
+        
+        # Create a namespace object from the saved args
+        from types import SimpleNamespace
+        model_args = SimpleNamespace(**train_args)
+        
+        # Get model from factory
+        model = self.get_model_fn(model_args).to(self.device)
         
         # Load weights
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
         model.load_state_dict(checkpoint['model_state_dict'])
         model.eval()
         
-        return model, train_params
+        return model, train_args
     
-    def create_test_dataset(self, train_params: Dict[str, Any]):
+    def create_test_dataset(self, train_args: Dict[str, Any]):
         """Create test dataset with training parameters."""
         return ATSPDatasetPyG(
             dataset_dir=self.args.data_path,
             split='test',
             atsp_size=self.args.atsp_size,
-            relation_types=tuple(train_params.get('relation_types', ['ss', 'st', 'tt', 'pp'])),
+            relation_types=tuple(train_args.get('relation_types', ['ss', 'st', 'tt', 'pp'])),
             device=self.device,
-            undirected=train_params.get('undirected', False)
+            undirected=train_args.get('undirected', False)
         )
     
     def test_instance(self, model, test_dataset, instance_idx: int) -> Dict[str, Any]:
@@ -161,16 +170,16 @@ class ATSPTesterPyG:
         
         return results
     
-    def run_test(self, model_class, checkpoint_path: str) -> Dict[str, Any]:
+    def run_test(self, checkpoint_path: str) -> Dict[str, Any]:
         """Main testing pipeline."""
         # Load model and parameters
-        model, train_params = self.load_model(model_class, checkpoint_path)
+        model, train_args = self.load_model_from_checkpoint(checkpoint_path)
         
         # Create test dataset
-        test_dataset = self.create_test_dataset(train_params)
+        test_dataset = self.create_test_dataset(train_args)
         
         print(f"Testing model on {len(test_dataset)} instances of size {self.args.atsp_size}")
-        print(f"Using relation types: {train_params.get('relation_types', 'default')}")
+        print(f"Using relation types: {train_args.get('relation_types', 'default')}")
         
         # Run tests
         results = self.test_all(model, test_dataset)

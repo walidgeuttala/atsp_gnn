@@ -116,7 +116,7 @@ class GCNModel(nn.Module):
         return h
 
 # Updated get_model to handle consolidated classes
-def get_model(args):
+def get_dgl_model(args):
     model_classes = {
         'EdgePropertyPredictionModel': EdgePropertyPredictionModel,
         'HetroGAT': HetroGAT,

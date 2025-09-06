@@ -210,7 +210,7 @@ class LightingFullBatchModelWrapper(pl.LightningModule):
         return optimizer
 
 # Updated get_model with inspect for flexible args
-def get_model(args):
+def get_pyg_model(args):
     model_signature = inspect.signature(GNN)
     model_args = {param: getattr(args, param) for param in model_signature.parameters if hasattr(args, param)}
     return GNN(**model_args)

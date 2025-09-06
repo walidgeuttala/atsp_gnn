@@ -7,7 +7,7 @@ import torch
 from torch_geometric.loader import DataLoader
 import tqdm.auto as tqdm
 
-from ..data.datasets_pyg import ATSPDatasetPyG
+from ..data.dataset_pyg import ATSPDatasetPyG
 
 
 class ATSPTrainerPyG:

@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import tqdm.auto as tqdm
 
-from ..data.datasets_dgl import ATSPDatasetDGL
+from ..data.dataset_dgl import ATSPDatasetDGL
 import argparse
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -167,11 +167,17 @@ class ATSPTrainerDGL:
     
     def save_checkpoint(self, model, optimizer, epoch, train_loss, val_loss, path):
         """Save model checkpoint."""
-        torch.save({
+        state = {
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'train_loss': train_loss,
             'val_loss': val_loss,
             'args': vars(self.args)
-        }, path)
+        }
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        torch.save(state, path)
+
+        # also save a "latest" copy for easy resume
+        latest_path = os.path.join(os.path.dirname(path), 'latest.pt')
+        torch.save(state, latest_path)
