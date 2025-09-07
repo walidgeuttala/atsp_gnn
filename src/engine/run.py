@@ -38,10 +38,10 @@ def main():
         TrainerClass = getattr(mod, 'ATSPTrainerDGL', None) or getattr(mod, 'ATSPTrainerPyG', None)
         if TrainerClass is None:
             raise AttributeError(f'{trainer_module} has no Trainer class (ATSPTrainerDGL/ATSPTrainerPyG)')
-        trainer = smart_instantiate(TrainerClass, args)
+        trainer = TrainerClass(args)
 
         # load model factory
-        models_mod = locate('src.models')
+        models_mod = locate(f'src.models.models_{framework}')
         get_model = getattr(models_mod, f'get_{framework}_model', None)
         if get_model is None:
             raise AttributeError('Model factory not found in src.models (expected get_dgl_model/get_pyg_model/get_model)')

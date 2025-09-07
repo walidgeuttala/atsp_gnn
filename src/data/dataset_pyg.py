@@ -16,14 +16,14 @@ class ATSPDatasetPyG:
     
     def __init__(
         self,
-        dataset_dir: pathlib.Path,
+        data_dir: pathlib.Path,
         split: str,
         atsp_size: int,
         relation_types: Tuple[str, ...] = ("ss", "st", "tt", "pp"),
         device: str = "cpu",
         undirected: bool = False
     ):
-        self.dataset_dir = pathlib.Path(dataset_dir)
+        self.data_dir = pathlib.Path(data_dir)
         self.split = split
         self.atsp_size = atsp_size
         self.device = device
@@ -40,14 +40,14 @@ class ATSPDatasetPyG:
     
     def _load_instance_list(self) -> List[str]:
         """Load instance filenames for this split."""
-        split_file = self.dataset_dir / f"{self.split}.txt"
+        split_file = self.data_dir / f"{self.split}.txt"
         with open(split_file, 'r') as f:
             return [line.strip() for line in f.readlines()]
     
     def _create_edge_template(self) -> torch.Tensor:
         """Create edge connectivity template from DGL template."""
         template_path = TemplateManager.get_template_path(
-            self.dataset_dir, self.atsp_size, self.relation_types
+            self.data_dir, self.atsp_size, self.relation_types
         )
         
         import dgl
@@ -65,7 +65,7 @@ class ATSPDatasetPyG:
     
     def _load_scalers(self) -> FeatureScaler:
         """Load fitted scalers."""
-        scalers_path = self.dataset_dir / 'scalers.pkl'
+        scalers_path = self.data_dir / 'scalers.pkl'
         return FeatureScaler.load(scalers_path)
     
     def __len__(self) -> int:
@@ -73,7 +73,7 @@ class ATSPDatasetPyG:
     
     def __getitem__(self, idx: int) -> Data:
         """Get processed PyG Data instance."""
-        instance_path = self.dataset_dir / self.instances[idx]
+        instance_path = self.data_dir / self.instances[idx]
         with open(instance_path, 'rb') as f:
             G = pickle.load(f)
         return self._process_graph(G)

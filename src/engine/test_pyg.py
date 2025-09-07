@@ -48,7 +48,7 @@ class ATSPTesterPyG:
     def create_test_dataset(self, train_args: Dict[str, Any]):
         """Create test dataset with training parameters."""
         return ATSPDatasetPyG(
-            dataset_dir=self.args.data_path,
+            data_dir=self.args.data_path,
             split='test',
             atsp_size=self.args.atsp_size,
             relation_types=tuple(train_args.get('relation_types', ['ss', 'st', 'tt', 'pp'])),
@@ -59,7 +59,7 @@ class ATSPTesterPyG:
     def test_instance(self, model, test_dataset, instance_idx: int) -> Dict[str, Any]:
         """Test single instance with GLS."""
         # Load original NetworkX graph
-        instance_path = test_dataset.dataset_dir / test_dataset.instances[instance_idx]
+        instance_path = test_dataset.data_dir / test_dataset.instances[instance_idx]
         with open(instance_path, 'rb') as f:
             G = pickle.load(f)
         

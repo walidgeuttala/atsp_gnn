@@ -11,6 +11,8 @@ def base_parser() -> argparse.ArgumentParser:
                         help='train or test')
     parser.add_argument('--framework', type=str, choices=['dgl', 'pyg'], default='dgl',
                         help='Which graph library to use')
+    parser.add_argument('--tb_dir', type=str, default='./runs', 
+                        help='Tensorboard log directory')
     parser.add_argument('--config', type=str, default=None, help='YAML config file to load')
     parser.add_argument('--device', type=str, default='cpu', help='cuda or cpu')
     parser.add_argument('--seed', type=int, default=42)

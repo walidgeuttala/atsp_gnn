@@ -9,7 +9,6 @@ import tqdm.auto as tqdm
 import torch
 import dgl.nn
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 
 from gnngls import datasets
 from gnngls.model import get_model

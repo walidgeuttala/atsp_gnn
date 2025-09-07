@@ -61,7 +61,8 @@ class ATSPTrainerPyG:
         """Training epoch for PyG."""
         model.train()
         epoch_loss = 0
-        
+        total_samples = 0
+
         for batch_i, batch in enumerate(self.train_loader):
             batch = batch.to(self.device)
             
@@ -72,22 +73,25 @@ class ATSPTrainerPyG:
             optimizer.step()
             
             epoch_loss += loss.detach().item()
-        
-        return epoch_loss / (batch_i + 1)
+            total_samples += batch.y.shape[0]
+
+        return epoch_loss / total_samples if total_samples > 0 else 0.0
     
     def epoch_test(self, model, criterion) -> float:
         """Validation epoch for PyG."""
         model.eval()
         epoch_loss = 0
-        
+        total_samples = 0
+
         with torch.no_grad():
             for batch_i, batch in enumerate(self.val_loader):
                 batch = batch.to(self.device)
                 y_pred = model(batch.x, batch.edge_index, batch.batch)
                 loss = criterion(y_pred, batch.y)
                 epoch_loss += loss.item()
-        
-        return epoch_loss / (batch_i + 1)
+                total_samples += batch.y.shape[0]
+
+        return epoch_loss / total_samples if total_samples > 0 else 0.0
     
     def train(self, model, trial_id: int = 0) -> Dict[str, Any]:
         """Main training loop."""
@@ -97,7 +101,7 @@ class ATSPTrainerPyG:
         model = model.to(self.device)
         optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr_init)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, self.args.lr_decay)
-        criterion = torch.nn.MSELoss()
+        criterion = torch.nn.MSELoss(reduction='sum')
         
         trial_dir = f'{self.log_dir}/trial_{trial_id}'
         os.makedirs(trial_dir, exist_ok=True)

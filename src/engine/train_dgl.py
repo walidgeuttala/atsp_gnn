@@ -7,7 +7,6 @@ from typing import Dict, Any, Optional
 import torch
 import dgl
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 import tqdm.auto as tqdm
 
 from ..data.dataset_dgl import ATSPDatasetDGL
@@ -15,7 +14,7 @@ import argparse
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-from src.models import get_dgl_model  # Your model factory
+from src.models.models_dgl import get_dgl_model
 from src.utils import fix_seed
 
 
@@ -37,7 +36,7 @@ class ATSPTrainerDGL:
     def create_datasets(self):
         """Create train/val datasets."""
         self.train_dataset = ATSPDatasetDGL(
-            dataset_dir=self.args.data_dir,
+            data_dir=self.args.data_dir,
             split='train',
             atsp_size=self.args.atsp_size,
             relation_types=tuple(self.args.relation_types),
@@ -45,7 +44,7 @@ class ATSPTrainerDGL:
         )
         
         self.val_dataset = ATSPDatasetDGL(
-            dataset_dir=self.args.data_dir,
+            data_dir=self.args.data_dir,
             split='val', 
             atsp_size=self.args.atsp_size,
             relation_types=tuple(self.args.relation_types),
@@ -72,7 +71,8 @@ class ATSPTrainerDGL:
         """Training epoch."""
         model.train()
         epoch_loss = 0
-        
+        total_samples = 0
+
         for batch_i, batch in enumerate(self.train_loader):
             batch = batch.to(self.device)
             x = batch.ndata['weight']
@@ -85,14 +85,16 @@ class ATSPTrainerDGL:
             optimizer.step()
             
             epoch_loss += loss.detach().item()
-        
-        return epoch_loss / (batch_i + 1)
+            total_samples += y.shape[0]
+
+        return epoch_loss / total_samples if total_samples > 0 else 0.0
     
     def epoch_test(self, model, criterion) -> float:
         """Validation epoch."""
         model.eval()
         epoch_loss = 0
-        
+        total_samples = 0  
+
         with torch.no_grad():
             for batch_i, batch in enumerate(self.val_loader):
                 batch = batch.to(self.device)
@@ -102,8 +104,9 @@ class ATSPTrainerDGL:
                 y_pred = model(batch, x)
                 loss = criterion(y_pred, y.type_as(y_pred))
                 epoch_loss += loss.item()
-        
-        return epoch_loss / (batch_i + 1)
+                total_samples += y.shape[0]
+
+        return epoch_loss / total_samples if total_samples > 0 else 0.0
     
     def train(self, model, trial_id: int = 0) -> Dict[str, Any]:
         """Main training loop."""
@@ -113,7 +116,7 @@ class ATSPTrainerDGL:
         model = model.to(self.device)
         optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr_init)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, self.args.lr_decay)
-        criterion = torch.nn.MSELoss()
+        criterion = torch.nn.MSELoss(reduction='sum')
         
         trial_dir = f'{self.log_dir}/trial_{trial_id}'
         os.makedirs(trial_dir, exist_ok=True)

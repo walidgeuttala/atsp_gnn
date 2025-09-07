@@ -77,7 +77,7 @@ class HetroGAT(nn.Module):
     """
     def __init__(self, input_dim, hidden_dim, output_dim, relation_types, num_gnn_layers=4, num_heads=16, agg='sum'):
         super().__init__()
-        self.relation_types = relation_types.split(' ')
+        self.relation_types = relation_types
         self.num_edge_types = len(self.relation_types)
         self.embed_layer = MLP(input_dim, hidden_dim, hidden_dim, skip=True)
         self.gnn_layers = nn.ModuleList()
