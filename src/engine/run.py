@@ -15,11 +15,6 @@ def locate(module_name: str):
 def main():
     args = parse_args()
     fix_seed(args.seed)
-    # import torch.multiprocessing as mp
-
-    # mp.set_start_method('spawn', force=True)
-    # make sure tb dir exists
-    # os.makedirs(args.tb_dir, exist_ok=True)
 
     framework = args.framework.lower()
     mode = args.mode.lower()
@@ -72,8 +67,7 @@ def main():
         tester = TesterClass(args, get_model)
 
         # Run testing with checkpoint path
-        checkpoint_path = args.checkpoint_path  # This should be the path to your .pt file
-        results = tester.run_test(checkpoint_path)
+        results = tester.run_test(args.model_path)
 
         print(f"Testing completed. Results saved to {checkpoint_path}/test_atsp{args.atsp_size}/results.json")
     else:

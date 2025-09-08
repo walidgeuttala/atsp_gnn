@@ -20,22 +20,25 @@ class ATSPDatasetDGL:
         split: str,
         atsp_size: int,
         relation_types: Tuple[str, ...] = ("ss", "st", "tt", "pp"),
-        device: str = "cpu"
+        device: str = "cpu",
+        undirected=True
     ):
         self.data_dir = pathlib.Path(data_dir)
         self.split = split
         self.atsp_size = atsp_size
         self.device = device
-        self.relation_types = relation_types
-        
+        self.relation_types = sorted(relation_types)
+        self.undirected = undirected
         # Load components
         self.instances = self._load_instance_list()
         self.template = self._load_template()
         self.scalers = self._load_scalers()
         
-        # Pre-compute dimensions
+        # Pre-compute dimensions for ATSP
         self.num_edges = atsp_size * (atsp_size - 1)
-    
+
+        self.graphs = [self._process_graph(self._load_instance_graph(f)) for f in self.instances]
+
     def _load_instance_list(self) -> List[str]:
         """Load instance filenames for this split."""
         split_file = self.data_dir / f"{self.split}.txt"
@@ -43,19 +46,21 @@ class ATSPDatasetDGL:
             return [line.strip() for line in f.readlines()]
     
     def _load_template(self) -> dgl.DGLGraph:
-        """Load pre-computed template."""
         template_path = TemplateManager.get_template_path(
             self.data_dir, self.atsp_size, self.relation_types
         )
-        
+
+        template_path = TemplateManager.get_template_path(
+        self.data_dir, self.atsp_size, self.relation_types
+        )
+
         graphs, _ = dgl.load_graphs(str(template_path))
-        template = graphs[0].to(self.device)
-        
-        # Clean existing features except mapping
-        for key in list(template.ndata.keys()):
-            if key != 'edge_mapping':
-                del template.ndata[key]
-        
+        template = graphs[0]
+        if self.undirected:
+            template = dgl.add_reverse_edges(template)
+        # Move to device
+        template = template.to(self.device)
+
         return template
     
     def _load_scalers(self) -> FeatureScaler:
@@ -68,11 +73,12 @@ class ATSPDatasetDGL:
     
     def __getitem__(self, idx: int) -> dgl.DGLGraph:
         """Get processed graph instance."""
-        instance_path = self.data_dir / self.instances[idx]
-        with open(instance_path, 'rb') as f:
-            G = pickle.load(f)
-        return self._process_graph(G)
+        return self.graphs[idx]
     
+    def _load_instance_graph(self, instance_file):
+        with open(self.data_dir / instance_file, 'rb') as f:
+            return pickle.load(f)
+
     def _process_graph(self, G: nx.DiGraph) -> dgl.DGLGraph:
         """Convert NetworkX graph to DGL with features."""
         # Extract features in consistent order
@@ -84,9 +90,9 @@ class ATSPDatasetDGL:
         
         # Create graph with features
         graph = self.template.clone()
-        graph.ndata['weight'] = torch.from_numpy(scaled_weights).unsqueeze(1).to(self.device)
-        graph.ndata['regret'] = torch.from_numpy(scaled_regrets).unsqueeze(1).to(self.device)
-        graph.ndata['in_solution'] = torch.from_numpy(in_solution).unsqueeze(1).to(self.device)
+        graph.ndata['weight'] = torch.from_numpy(scaled_weights).unsqueeze(1).to(self.device).float()
+        graph.ndata['regret'] = torch.from_numpy(scaled_regrets).unsqueeze(1).to(self.device).float()
+        graph.ndata['in_solution'] = torch.from_numpy(in_solution).unsqueeze(1).to(self.device).float()
         
         # Add metadata
         if hasattr(G, 'graph'):

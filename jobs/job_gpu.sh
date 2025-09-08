@@ -14,19 +14,19 @@ export CUDA_HOME=/opt/software/packages/cuda/12.1
 export LD_LIBRARY_PATH=/project/c_gnn_001/glibc_install/glibc-2.31/lib:$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 
 
-# python3 /project/c_gnn_001/code/tsp/atsp_gnn/src/data2/dataset_generator.py 10 10 /project/c_gnn_001/code/tsp/atsp_gnn/saved_dataset --parallel
-# python3 /project/c_gnn_001/code/tsp/atsp_gnn/src/data2/validate_atsp.py
-# python3 -m src.data.preprocessor /project/c_gnn_001/code/tsp/atsp_gnn/saved_dataset/ATSP_30x100 --n_train 30 --n_val 0 --n_test 0 --atsp_size 10
-# python3 -m src.data.preprocessor ../saved_dataset/ATSP_30x500 --n_train 0 --n_val 0 --n_test 30 --atsp_size 500
+# python ../src/data2/dataset_generator.py 10 10 ../saved_dataset --parallel
+# python ../src/data2/validate_atsp.py
+# python3 -m src.data.preprocessor ../saved_dataset/ATSP_10x10 --n_train 10 --n_val 0 --n_test 0 --atsp_size 10
 
-python -m src.engine.run --mode train --framework dgl --data_dir ../saved_dataset/ATSP_3000x50 --model HetroGAT --atsp_size 50 --batch_size 1 --n_epochs 100 --lr_init 1e-3 --tb_dir ./runs --agg concat --device cuda
+# python -m src.data.preprocessor ../saved_dataset/ATSP_30x500 --n_train 0 --n_val 0 --n_test 30 --atsp_size 500
 
+# python -m src.engine.run --mode train --framework dgl --data_dir ../saved_dataset/ATSP_10x10 \
+#      --model HetroGAT --atsp_size 10 --batch_size 1 --n_epochs 100 --lr_init 1e-3 --tb_dir ./runs \
+#       --agg concat --device cuda --undirected
 
-# python3 -m src.engine.run \
-#     --mode test \
-#     --framework pyg \
-#     --atsp_size 50 \
-#     --data_path ../saved_dataset/ATSP_100x50 \
+# python -m src.engine.run --mode test --framework dgl --atsp_size 150 --model HetroGAT --batch_size 1 \
+#     --data_path ../saved_dataset/ATSP_30x150 --tb_dir ./runs --agg concat\
 #     --model_path ../saved_model/Oct17_04-09-53_HetroGATConcat_trained_ATSP50/trial_0/checkpoint_best_val.pt \
-#     --device cuda
+#     --device cuda --undirected
 
+python3 -m src.data.graph_transforms

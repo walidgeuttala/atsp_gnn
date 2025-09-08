@@ -11,8 +11,6 @@ import tqdm.auto as tqdm
 
 from ..data.dataset_dgl import ATSPDatasetDGL
 import argparse
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
 
 from src.models.models_dgl import get_dgl_model
 from src.utils import fix_seed
@@ -40,6 +38,7 @@ class ATSPTrainerDGL:
             split='train',
             atsp_size=self.args.atsp_size,
             relation_types=tuple(self.args.relation_types),
+            undirected=self.args.undirected,
             device=self.device
         )
         
@@ -48,6 +47,7 @@ class ATSPTrainerDGL:
             split='val', 
             atsp_size=self.args.atsp_size,
             relation_types=tuple(self.args.relation_types),
+            undirected=self.args.undirected,
             device=self.device
         )
     

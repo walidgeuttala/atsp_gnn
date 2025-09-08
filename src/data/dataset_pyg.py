@@ -27,7 +27,7 @@ class ATSPDatasetPyG:
         self.split = split
         self.atsp_size = atsp_size
         self.device = device
-        self.relation_types = relation_types
+        self.relation_types = sorted(relation_types)
         self.undirected = undirected
         
         # Load components
@@ -35,7 +35,7 @@ class ATSPDatasetPyG:
         self.edge_index_template = self._create_edge_template()
         self.scalers = self._load_scalers()
         
-        # Pre-compute dimensions
+        # Pre-compute dimensions for ATSP
         self.num_edges = atsp_size * (atsp_size - 1)
     
     def _load_instance_list(self) -> List[str]:
@@ -50,6 +50,7 @@ class ATSPDatasetPyG:
             self.data_dir, self.atsp_size, self.relation_types
         )
         
+        # loading the template if already exisits
         import dgl
         graphs, _ = dgl.load_graphs(str(template_path))
         dgl_graph = graphs[0]
@@ -89,9 +90,9 @@ class ATSPDatasetPyG:
         
         # Create node features (each node represents an edge in original graph)
         x = torch.stack([
-            torch.from_numpy(scaled_weights),
-            torch.from_numpy(scaled_regrets),
-            torch.from_numpy(in_solution)
+            torch.from_numpy(scaled_weights).float(),
+            torch.from_numpy(scaled_regrets).float(),
+            torch.from_numpy(in_solution).float()
         ], dim=1).to(self.device)
         
         # Create PyG Data

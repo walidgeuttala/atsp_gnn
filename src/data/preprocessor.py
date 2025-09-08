@@ -111,7 +111,6 @@ class DatasetPreprocessor:
         relation_types: Tuple[str, ...] = ("ss", "st", "tt", "pp"),
         half_st: bool = False,
         directed: bool = False,
-        add_reverse_edges: bool = True,
         save_pyg: bool = True
     ):
         """Create and save line graph templates for different sizes and relation type combinations."""
@@ -134,7 +133,6 @@ class DatasetPreprocessor:
                         relation_types=rel_combo,
                         half_st=half_st,
                         directed=directed,
-                        add_reverse_edges=add_reverse_edges
                     )
                     
                     rel_str = "_".join(rel_combo)
@@ -157,23 +155,27 @@ class DatasetPreprocessor:
                         except Exception as e:
                             print(f"Failed PyG template {size}, {rel_str}: {e}")
     
-    def _dgl_to_pyg(self, dgl_graph: dgl.DGLGraph) -> 'Data':
-        """Convert a DGL graph to a PyG Data object."""
-        edge_index = torch.stack([dgl_graph.edges()[0], dgl_graph.edges()[1]], dim=0)
-        x = dgl_graph.ndata.get('feat', torch.ones((dgl_graph.number_of_nodes(), 1)))
-        edge_attr = dgl_graph.edata.get('feat', torch.ones((dgl_graph.number_of_edges(), 1)))
+    # def _dgl_to_pyg(self, dgl_graph: dgl.DGLGraph) -> 'Data':
+    #     """Convert a DGL graph to a PyG Data object."""
+    #     edge_index = torch.stack([dgl_graph.edges()[0], dgl_graph.edges()[1]], dim=0)
+    #     x = dgl_graph.ndata.get('feat', torch.ones((dgl_graph.number_of_nodes(), 1)))
+    #     edge_attr = dgl_graph.edata.get('feat', torch.ones((dgl_graph.number_of_edges(), 1)))
         
-        data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
-        if dgl_graph.is_homogeneous:
-            data.edge_type = torch.zeros(dgl_graph.number_of_edges(), dtype=torch.long)
-        else:
-            edge_types = []
-            for etype in dgl_graph.etypes:
-                mask = dgl_graph.edges(etype=etype)[0]
-                edge_types.extend([dgl_graph.get_etype_id(etype)] * mask.size(0))
-            data.edge_type = torch.tensor(edge_types, dtype=torch.long)
+    #     data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
+    #     if dgl_graph.is_homogeneous:
+    #         data.edge_type = torch.zeros(dgl_graph.number_of_edges(), dtype=torch.long)
+    #     else:
+    #         edge_types = []
+    #         for etype in dgl_graph.etypes:
+    #             mask = dgl_graph.edges(etype=etype)[0]
+    #             edge_types.extend([dgl_graph.get_etype_id(etype)] * mask.size(0))
+    #         data.edge_type = torch.tensor(edge_types, dtype=torch.long)
         
-        return data
+    #     return data
+    def _dgl_to_pyg(self, dgl_graph: dgl.DGLGraph):
+        """Convert a DGL graph to a PyG Data/HeteroData object."""
+        from torch_geometric.utils import from_dgl
+        return from_dgl(dgl_graph)
 
 
 def main():
