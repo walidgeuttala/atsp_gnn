@@ -21,10 +21,34 @@ class MLP(nn.Module):
             h += self.fc_skip(x)
         return h
 
-class AttentionLayer(nn.Module):
-    def __init__(self, in_dim, num_heads, out_dim):
+class SkipConnection(nn.Module):
+    def __init__(self, module):
         super().__init__()
-        self.gat = dglnn.GATConv(in_dim, out_dim // num_heads, num_heads)
+        self.module = module
+
+    def forward(self, x, G=None):
+        if G is not None:
+            y = self.module(G, x).view(G.number_of_nodes(), -1)
+        else:
+            y = self.module(x)
+        return x + y
+
+class AttentionLayer(nn.Module):
+    def __init__(self, embed_dim, num_heads, hidden_dim):
+        super().__init__()
+        self.gat = dglnn.GATConv(embed_dim, embed_dim // num_heads, num_heads)
+
+        self.feed_forward = nn.Sequential(
+            nn.BatchNorm1d(embed_dim),
+            SkipConnection(
+                nn.Sequential(
+                    nn.Linear(embed_dim, hidden_dim),
+                    nn.ReLU(),
+                    nn.Linear(hidden_dim, embed_dim)
+                ),
+            ),
+            nn.BatchNorm1d(embed_dim),
+        )
 
     def forward(self, g, h):
         h = self.gat(g, h).flatten(1)
@@ -36,14 +60,14 @@ class EdgePropertyPredictionModel(nn.Module):
     Consolidated model for edge property prediction.
     - Original: jk=None, skip_connection=False
     - Original+SC: jk=None, skip_connection=True
-    - Original+JK: jk='cat'/'max'/'lstm', skip_connection=False
-    - Original+JK+SC: jk='cat'/'max'/'lstm', skip_connection=True
+    - Original+JK: jk='cat, skip_connection=False
+    - Original+JK+SC: jk='cat, skip_connection=True
     """
     def __init__(self, input_dim, hidden_dim, output_dim, num_gnn_layers=4, num_heads=16, jk=None, skip_connection=False):
         super().__init__()
         self.embed_layer = MLP(input_dim, hidden_dim, hidden_dim, skip=True)
         self.message_passing_layers = nn.ModuleList(
-            [AttentionLayer(hidden_dim, num_heads, hidden_dim) for _ in range(num_gnn_layers)]
+            [AttentionLayer(hidden_dim, num_heads, hidden_dim*2) for _ in range(num_gnn_layers)]
         )
         self.skip_connection = skip_connection
         self.jk = None
@@ -81,21 +105,24 @@ class HetroGAT(nn.Module):
         self.num_edge_types = len(self.relation_types)
         self.embed_layer = MLP(input_dim, hidden_dim, hidden_dim, skip=True)
         self.gnn_layers = nn.ModuleList()
+        self.mlp_layers = nn.ModuleList()
         agg_mode = 'stack' if agg == 'concat' else agg  # Treat 'concat' as 'stack'
+        hidden_dim2 = hidden_dim if agg_mode == 'sum' else hidden_dim * self.num_edge_types
+
         for _ in range(num_gnn_layers):
             conv_dict = {rel: dglnn.GATConv(hidden_dim, hidden_dim // num_heads, num_heads) for rel in self.relation_types}
             self.gnn_layers.append(dglnn.HeteroGraphConv(conv_dict, aggregate=agg_mode))
-        # Adjust decision layer input dim based on agg
-        dec_in_dim = hidden_dim * self.num_edge_types if agg_mode == 'stack' else hidden_dim
-        self.decision_layer = MLP(dec_in_dim, hidden_dim, output_dim)
+            self.mlp_layers.append(MLP(hidden_dim2, hidden_dim2//2, hidden_dim))
+        self.decision_layer = MLP(hidden_dim, hidden_dim, output_dim)
 
     def forward(self, graph, inputs):
         with graph.local_scope():
             inputs = self.embed_layer(inputs)
             h = {graph.ntypes[0]: inputs}
-            for gnn_layer in self.gnn_layers:
+            for gnn_layer, mlp_layer in zip(self.gnn_layers, self.mlp_layers):
                 h_new = gnn_layer(graph, h)
                 h_new = {k: F.leaky_relu(v).flatten(1) for k, v in h_new.items()}
+                h_new = {k: mlp_layer(v) for k, v in h_new.items()}
                 if graph.ntypes[0] in h_new:
                     h_new[graph.ntypes[0]] += h[graph.ntypes[0]]  # Residual connection
                 h = h_new

@@ -1,7 +1,7 @@
 import networkx as nx
 import torch
 import dgl
-from typing import Tuple, List, Dict, Optional
+from typing import Tuple
 import pathlib
 
 
@@ -11,8 +11,8 @@ class LineGraphTransform:
     def __init__(
         self,
         relation_types: Tuple[str, ...] = ("ss", "st", "tt", "pp"),
-        half_st: bool = True,
-        directed: bool = True,
+        half_st: bool = False,
+        directed: bool = False,
         add_reverse_edges: bool = True
     ):
         self.relation_types = relation_types

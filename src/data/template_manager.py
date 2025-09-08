@@ -16,12 +16,10 @@ class TemplateManager:
         """Get template path based on relation types."""
         templates_dir = dataset_dir / "templates"
         
-        # Sort relation types for consistent naming
-        sorted_types = tuple(sorted(relation_types))
-        type_str = "_".join(sorted_types)
+        type_str = "_".join(relation_types)
         
         # Determine subdirectory
-        num_types = len(sorted_types)
+        num_types = len(relation_types)
         if num_types == 1:
             subdir = "single"
         elif num_types == 2:
@@ -32,12 +30,11 @@ class TemplateManager:
             subdir = "all"
         else:
             subdir = ""
-        
+
         # Try specific path first, then fallback to base
-        if subdir:
+        if not subdir=='':
             template_path = templates_dir / subdir / f"template_{atsp_size}_{type_str}.dgl"
-            if template_path.exists():
-                return template_path
+            return template_path
         
         # Fallback to base template
         return templates_dir / f"template_{atsp_size}.dgl"

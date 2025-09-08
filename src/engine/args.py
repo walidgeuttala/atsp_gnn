@@ -48,7 +48,7 @@ def train_test_parser() -> argparse.ArgumentParser:
     parser.add_argument('--n_heads', type=int, default=4)
     parser.add_argument('--jk', type=str, default=None, choices=[None, 'cat'])
     parser.add_argument('--skip_connection', action='store_true')
-    parser.add_argument('--agg', type=str, default='sum', choices=['sum', 'stack', 'concat'])
+    parser.add_argument('--agg', type=str, default='sum', choices=['sum', 'concat'])
 
     # Training hyperparams
     parser.add_argument('--batch_size', type=int, default=32)
