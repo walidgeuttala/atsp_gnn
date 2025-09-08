@@ -55,16 +55,10 @@ class ATSPTrainerDGL:
         """Create data loaders."""
         self.train_loader = self.train_dataset.get_dataloader(
             batch_size=self.args.batch_size,
-            shuffle=True,
-            num_workers=self.args.num_workers,
-            pin_memory=True
         )
         
         self.val_loader = self.val_dataset.get_dataloader(
             batch_size=self.args.batch_size,
-            shuffle=False,
-            num_workers=self.args.num_workers,
-            pin_memory=True
         )
     
     def epoch_train(self, model, criterion, optimizer) -> float:

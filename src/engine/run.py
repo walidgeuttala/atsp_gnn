@@ -15,7 +15,9 @@ def locate(module_name: str):
 def main():
     args = parse_args()
     fix_seed(args.seed)
+    # import torch.multiprocessing as mp
 
+    # mp.set_start_method('spawn', force=True)
     # make sure tb dir exists
     # os.makedirs(args.tb_dir, exist_ok=True)
 

@@ -48,14 +48,10 @@ class ATSPTrainerPyG:
     def create_dataloaders(self):
         """Create PyG data loaders."""
         self.train_loader = self.train_dataset.get_dataloader(
-            batch_size=self.args.batch_size,
-            shuffle=True
-        )
+            batch_size=self.args.batch_size,        )
         
         self.val_loader = self.val_dataset.get_dataloader(
-            batch_size=self.args.batch_size,
-            shuffle=False
-        )
+            batch_size=self.args.batch_size,        )
     
     def epoch_train(self, model, criterion, optimizer) -> float:
         """Training epoch for PyG."""

@@ -19,7 +19,7 @@ export LD_LIBRARY_PATH=/project/c_gnn_001/glibc_install/glibc-2.31/lib:$CUDA_HOM
 # python3 -m src.data.preprocessor /project/c_gnn_001/code/tsp/atsp_gnn/saved_dataset/ATSP_30x100 --n_train 30 --n_val 0 --n_test 0 --atsp_size 10
 # python3 -m src.data.preprocessor ../saved_dataset/ATSP_30x500 --n_train 0 --n_val 0 --n_test 30 --atsp_size 500
 
-python -m src.engine.run --mode train --framework dgl --data_dir ../saved_dataset/ATSP_3000x50 --model HetroGAT --atsp_size 50 --batch_size 1 --n_epochs 100 --lr_init 1e-3 --tb_dir ./runs --agg concat
+python -m src.engine.run --mode train --framework dgl --data_dir ../saved_dataset/ATSP_3000x50 --model HetroGAT --atsp_size 50 --batch_size 1 --n_epochs 100 --lr_init 1e-3 --tb_dir ./runs --agg concat --device cuda
 
 
 # python3 -m src.engine.run \
