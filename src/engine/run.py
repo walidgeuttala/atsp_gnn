@@ -66,7 +66,7 @@ def main():
         model = get_model(args)
         results = tester.run_test(model)
 
-        print(f"Testing completed. Results saved to {checkpoint_path}/test_atsp{args.atsp_size}/results.json")
+        print(f"Testing completed. Results saved to {args.model_path}/test_atsp{args.atsp_size}/results.json")
     else:
         raise ValueError(f'Unknown mode: {mode}')
 
