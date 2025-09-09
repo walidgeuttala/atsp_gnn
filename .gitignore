@@ -1,14 +1,20 @@
-# Python cache
+# -----------------------------
+# Python cache and bytecode
+# -----------------------------
 __pycache__/
 *.pyc
 *.pyo
 
-# Virtual env / Pipenv
-Pipfile.lock
+# -----------------------------
+# Virtual environments / dependency locks
+# -----------------------------
 .venv/
 .env/
+Pipfile.lock
 
-# Data
+# -----------------------------
+# Data files
+# -----------------------------
 data/raw/
 data/processed/
 *.pkl
@@ -16,21 +22,27 @@ data/processed/
 *.npy
 *.npz
 
-# Results
+# -----------------------------
+# Results / output
+# -----------------------------
 results/*
 !results/README.md
 
-# Jobs logs
-jobs/*.out
-jobs/*.err
+# -----------------------------
+# Job logs / runtime files
+# -----------------------------
+jobs/
 slurm-*.out
 
-# IDE
+# -----------------------------
+# IDE / editor configs
+# -----------------------------
 .vscode/
 .idea/
 
-LKH-3.0.9
-saved_model
-saved_dataset
-.vscode
-jobs
+# -----------------------------
+# Local projects / saved models
+# -----------------------------
+LKH-3.0.9/
+saved_model/
+saved_dataset/
