@@ -6,43 +6,43 @@ import numpy as np
 from .operators import two_opt_a2a, relocate_a2a, two_opt_o2a, relocate_o2a
 from .atsp_utils import tour_cost, tour_cost2
 
-def nearest_neighbor(G, depot, weight='weight'):
+def nearest_neighbor(G, start, weight='weight'):
     """
     Generate a tour using the nearest neighbor heuristic.
     
     Args:
         G (nx.Graph): The graph.
-        depot (int): Starting node.
+        start (int): Starting node.
         weight (str): Edge weight attribute.
     
     Returns:
         list: The generated tour.
     """
-    tour = [depot]
+    tour = [start]
     while len(tour) < len(G.nodes):
         i = tour[-1]
         neighbours = [(j, G.edges[(i, j)][weight]) for j in G.neighbors(i) if j not in tour]
         j, dist = min(neighbours, key=lambda e: e[1])
         tour.append(j)
 
-    tour.append(depot)
+    tour.append(start)
     return tour
 
 
-def probabilistic_nearest_neighbour(G, depot, guide='weight', invert=True):
+def probabilistic_nearest_neighbour(G, start, guide='weight', invert=True):
     """
     Probabilistic nearest neighbor tour construction.
     
     Args:
         G (nx.Graph): The graph.
-        depot (int): Starting node.
+        start (int): Starting node.
         guide (str): Guide attribute for probabilities.
         invert (bool): Invert the probabilities if True.
     
     Returns:
         list: The generated tour.
     """
-    tour = [depot]
+    tour = [start]
 
     while len(tour) < len(G.nodes):
         i = tour[-1]
@@ -69,17 +69,17 @@ def probabilistic_nearest_neighbour(G, depot, guide='weight', invert=True):
         j = np.random.choice(nodes, p=p / np.sum(p))
         tour.append(j)
 
-    tour.append(depot)
+    tour.append(start)
     return tour
 
 
-def best_probabilistic_nearest_neighbour(G, depot, n_iters, guide='weight', weight='weight'):
+def best_probabilistic_nearest_neighbour(G, start, n_iters, guide='weight', weight='weight'):
     """
     Find the best tour from multiple probabilistic nearest neighbor runs.
     
     Args:
         G (nx.Graph): The graph.
-        depot (int): Starting node.
+        start (int): Starting node.
         n_iters (int): Number of iterations.
         guide (str): Guide attribute.
         weight (str): Weight attribute for cost.
@@ -91,7 +91,7 @@ def best_probabilistic_nearest_neighbour(G, depot, n_iters, guide='weight', weig
     best_cost = 0
 
     for _ in range(n_iters):
-        new_tour = probabilistic_nearest_neighbour(G, depot, guide)
+        new_tour = probabilistic_nearest_neighbour(G, start, guide)
         new_cost = tour_cost(G, new_tour, weight)
 
         if new_cost < best_cost or best_tour is None:
@@ -127,13 +127,13 @@ def cheapest_insertion(G, sub_tour, n, weight='weight'):
     return best_tour
 
 
-def insertion(G, depot, mode='farthest', weight='weight'):
+def insertion(G, start, mode='farthest', weight='weight'):
     """
     Construct a tour using insertion heuristic.
     
     Args:
         G (nx.Graph): The graph.
-        depot (int): Starting node.
+        start (int): Starting node.
         mode (str): 'random', 'nearest', or 'farthest'.
         weight (str): Edge weight attribute.
     
@@ -143,8 +143,8 @@ def insertion(G, depot, mode='farthest', weight='weight'):
     assert mode in ['random', 'nearest', 'farthest'], f'Unknown mode: {mode}'
 
     nodes = list(G.nodes)
-    nodes.remove(depot)
-    tour = [depot, depot]
+    nodes.remove(start)
+    tour = [start, start]
 
     while len(nodes) > 0:
         if mode == 'random':
@@ -228,7 +228,7 @@ def guided_local_search(G, init_tour, init_cost, t_lim, weight='weight', guides=
     k = 0.1 * init_cost / len(G.nodes)
     nx.set_edge_attributes(G, 0, 'penalty')
 
-    edge_weight, _ = nx.attr_matrix(G, weight)
+    edge_weight = nx.to_numpy_array(G, weight=weight)
     cnt_ans = 0
     cur_tour, cur_cost, search_progress, cnt = local_search(init_tour, init_cost, edge_weight, first_improvement, t_lim)
     cnt_ans += cnt
@@ -251,13 +251,13 @@ def guided_local_search(G, init_tour, init_cost, t_lim, weight='weight', guides=
                     max_util = util
                     max_util_e = e
             G[max_util_e[0]][max_util_e[1]]['penalty'] += 1.
-            edge_penalties, _ = nx.attr_matrix(G, 'penalty')
+            edge_penalties = nx.to_numpy_array(G, weight='penalty')
             edge_weight_guided = edge_weight + k * edge_penalties
             # apply operator to edge
             for n in max_util_e:
                 if time.time() >= t_lim:
                     break
-                if n != 0:  # not the depot
+                if n != 0:  # not the start
                     i = cur_tour.index(n)
 
                     for operator in [two_opt_o2a, relocate_o2a]:

@@ -129,6 +129,7 @@ class DatasetPreprocessor:
         for size in atsp_sizes:
             for r in range(1, len(relation_types) + 1):
                 for rel_combo in combinations(relation_types, r):
+                    rel_combo = sorted(rel_combo)
                     combo_transform = LineGraphTransform(
                         relation_types=rel_combo,
                         half_st=half_st,

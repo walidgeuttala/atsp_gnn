@@ -17,40 +17,15 @@ class ATSPTesterDGL:
     def __init__(self, args, get_model_fn: Callable = None):
         self.args = args
         self.device = torch.device('cuda' if args.device == 'cuda' and torch.cuda.is_available() else 'cpu')
-        self.get_model_fn = get_model_fn  # Model factory function
     
-    def load_model_from_checkpoint(self, checkpoint_path: str):
-        """Load trained model from checkpoint using model factory."""
-        # Load checkpoint
-        checkpoint = torch.load(checkpoint_path, map_location=self.device)
-        
-        # Get training args from checkpoint
-        train_args = checkpoint.get('args', {})
-        
-        # Create model using factory function
-        if self.get_model_fn is None:
-            raise ValueError("No model factory function provided")
-        
-        # Create a namespace object from the saved args
-        from types import SimpleNamespace
-        model_args = SimpleNamespace(**train_args)
-        
-        # Get model from factory
-        model = self.get_model_fn(model_args).to(self.device)
-        
-        # Load weights
-        model.load_state_dict(checkpoint['model_state_dict'])
-        model.eval()
-        
-        return model, train_args
-    
-    def create_test_dataset(self, train_args: Dict[str, Any]):
+    def create_test_dataset(self):
         """Create test dataset with training parameters."""
         return ATSPDatasetDGL(
             data_dir=self.args.data_path,
             split='test',
             atsp_size=self.args.atsp_size,
-            relation_types=tuple(train_args.get('relation_types', ['ss', 'st', 'tt', 'pp'])),
+            relation_types=tuple(self.args.relation_types),
+            undirected=self.args.undirected,
             device=self.device
         )
     
@@ -99,7 +74,7 @@ class ATSPTesterDGL:
         gls_start = time.time()
         time_limit = gls_start + self.args.time_limit
         
-        best_tour, best_cost, search_progress, num_iterations = guided_local_search(
+        best_tour, final_cost, search_progress, num_iterations = guided_local_search(
             G, init_tour, init_cost, time_limit,
             weight='weight',
             guides=['regret_pred'],
@@ -111,15 +86,15 @@ class ATSPTesterDGL:
         
         # Calculate gaps
         init_gap = (init_cost / opt_cost - 1) * 100
-        final_gap = (best_cost / opt_cost - 1) * 100
+        final_gap = (final_cost / opt_cost - 1) * 100
         
         return {
             'opt_cost': opt_cost,
             'init_cost': init_cost,
-            'best_cost': best_cost,
+            'final_cost': final_cost,
             'init_gap': init_gap,
             'final_gap': final_gap,
-            'num_iterations': num_iterations,
+            'num_iteration': num_iterations,
             'model_time': model_time,
             'gls_time': gls_time,
             'instance': test_dataset.instances[instance_idx]
@@ -168,28 +143,27 @@ class ATSPTesterDGL:
         
         return results
     
-    def run_test(self, checkpoint_path: str) -> Dict[str, Any]:
+    def run_test(self, model) -> Dict[str, Any]:
         """Main testing pipeline."""
         # Load model and parameters
-        model, train_args = self.load_model_from_checkpoint(checkpoint_path)
         
         # Create test dataset
-        test_dataset = self.create_test_dataset(train_args)
+        test_dataset = self.create_test_dataset()
         
         print(f"Testing model on {len(test_dataset)} instances of size {self.args.atsp_size}")
-        print(f"Using relation types: {train_args.get('relation_types', 'default')}")
+        print(f"Using relation types: {self.args.relation_types}")
         
         # Run tests
         results = self.test_all(model, test_dataset)
         
         # Save results
         output_dir = os.path.join(
-            os.path.dirname(checkpoint_path),
+            os.path.dirname(self.args.model_path),
             f'test_atsp{self.args.atsp_size}'
         )
         os.makedirs(output_dir, exist_ok=True)
         
-        with open(os.path.join(output_dir, 'results.json'), 'w') as f:
+        with open(os.path.join(output_dir, f'results_test_{self.args.atsp_size}.json'), 'w') as f:
             json.dump(results, f, indent=2)
         
         return results

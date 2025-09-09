@@ -56,18 +56,15 @@ def main():
         TesterClass = getattr(mod, 'ATSPTesterDGL', None) or getattr(mod, 'ATSPTesterPyG', None)
         if TesterClass is None:
             raise AttributeError(f'{tester_module} has no Tester class (ATSPTesterDGL/ATSPTesterPyG)')
+        tester = TesterClass(args)
 
         # Load model factory
         models_mod = locate(f'src.models.models_{framework}')
         get_model = getattr(models_mod, f'get_{framework}_model', None)
         if get_model is None:
             raise AttributeError('Model factory not found in src.models (expected get_dgl_model/get_pyg_model)')
-
-        # Create tester instance with model factory function
-        tester = TesterClass(args, get_model)
-
-        # Run testing with checkpoint path
-        results = tester.run_test(args.model_path)
+        model = get_model(args)
+        results = tester.run_test(model)
 
         print(f"Testing completed. Results saved to {checkpoint_path}/test_atsp{args.atsp_size}/results.json")
     else:

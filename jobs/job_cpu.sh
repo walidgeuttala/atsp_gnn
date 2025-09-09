@@ -14,6 +14,8 @@
 # python -m src.data.preprocessor /project/c_gnn_001/code/tsp/atsp_gnn/saved_dataset/ATSP_10x10 --n_train 10 --n_val 0 --n_test 0 --atsp_size 10
 
 # python -m src.engine.run --mode train --framework dgl --data_dir ../saved_data --model HetroGATSum --atsp_size 10 --batch_size 1 --n_epochs 100 --lr_init 1e-3 --tb_dir ./runs
-
+export PYTHONPATH=/project/c_gnn_001/code/tsp/atsp_gnn/:$PYTHONPATH
+# helps to fix the issue regarding the dgl for the ld library path files 
 export CUDA_HOME=/opt/software/packages/cuda/12.1
 export LD_LIBRARY_PATH=/project/c_gnn_001/glibc_install/glibc-2.31/lib:$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+python3 -m src.data.graph_transforms

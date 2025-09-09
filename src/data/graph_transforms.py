@@ -14,7 +14,7 @@ class LineGraphTransform:
         half_st: bool = False,
         directed: bool = True,
     ):
-        self.relation_types = relation_types
+        self.relation_types = sorted(relation_types)
         self.half_st = half_st
         self.directed = directed
     
@@ -89,10 +89,10 @@ class LineGraphTransform:
         for rel_type in self.relation_types:
             if rel_type in edge_tensors:
                 edge_types[(node_type, rel_type, node_type)] = (
-                    edge_tensors[rel_type][:, 0].to(torch.int64), 
-                    edge_tensors[rel_type][:, 1].to(torch.int64)
-                )
-        
+                torch.as_tensor(edge_tensors[rel_type][:, 0], dtype=torch.long),
+                torch.as_tensor(edge_tensors[rel_type][:, 1], dtype=torch.long)
+            )
+                    
         num_nodes = n * (n - 1)
         g2 = dgl.heterograph(edge_types,num_nodes_dict={node_type: num_nodes})
         
@@ -100,7 +100,7 @@ class LineGraphTransform:
             g2 = dgl.add_reverse_edges(g2)
         
         # Store original edge mapping
-        # g2.ndata['edge_mapping'] = torch.tensor(list(edge_id.keys()))
+        g2.ndata['edge_mapping'] = torch.tensor(list(edge_id.keys()))
         
         return g2
     
@@ -109,33 +109,3 @@ class LineGraphTransform:
         template = self.create_line_graph_template(n_nodes)
         dgl.save_graphs(str(save_path), [template])
         return template
-
-import pathlib
-
-def main():
-    # Define parameters
-    n_nodes = 4  # small number to debug
-    relation_types = ("ss", "st", "tt", "pp")
-    save_path = pathlib.Path("test_template.dgl")
-
-    # Initialize transform
-    transform = LineGraphTransform(
-        relation_types=relation_types,
-        half_st=False,
-        directed=True
-    )
-
-    # Create line graph template
-    template = transform.create_line_graph_template(n_nodes)
-    print(f"Created template with {template.num_nodes()} nodes and {template.num_edges()} edges.")
-
-    # Save template
-    transform.save_template(n_nodes, save_path)
-    print(f"Template saved to {save_path}")
-
-    # # Check edge types and mapping
-    # print("Edge types:", template.etypes)
-    # print("Edge mapping:", template.ndata['edge_mapping'])
-
-if __name__ == "__main__":
-    main()

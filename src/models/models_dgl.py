@@ -144,17 +144,41 @@ class GCNModel(nn.Module):
 
 # Updated get_model to handle consolidated classes
 def get_dgl_model(args):
+    import torch
+    import inspect
+    from src.models.models_dgl import EdgePropertyPredictionModel, HetroGAT, GCNModel
+
     model_classes = {
         'EdgePropertyPredictionModel': EdgePropertyPredictionModel,
         'HetroGAT': HetroGAT,
         'GCNModel': GCNModel,
     }
+
     if args.model not in model_classes:
         raise ValueError(f"Model '{args.model}' not recognized")
-    
+
     model_class = model_classes[args.model]
     model_signature = inspect.signature(model_class)
-    # Pass only args that match the signature
-    model_args = {param: getattr(args, param) for param in model_signature.parameters if hasattr(args, param)}
-    
-    return model_class(**model_args)
+
+    if args.model_path and args.model_path.strip():
+        # Load checkpoint dict
+        checkpoint = torch.load(args.model_path, map_location=args.device)
+        ckpt_args = checkpoint.get("args", {})
+
+        # Keep only keys that match model constructor
+        model_args = {k: ckpt_args[k] for k in model_signature.parameters if k in ckpt_args}
+
+        # Instantiate model and load weights
+        model = model_class(**model_args).to(args.device)
+        model.load_state_dict(checkpoint['model_state_dict'])
+        print(
+            f"Loaded model '{args.model}' from '{args.model_path}' "
+            f"(epoch={checkpoint.get('epoch', '?')}, val_loss={checkpoint.get('val_loss', '?')})"
+        )
+    else:
+        # Fresh model from current args
+        model_args = {k: getattr(args, k) for k in model_signature.parameters if hasattr(args, k)}
+        model = model_class(**model_args).to(args.device)
+        print(f"Created fresh model '{args.model}' from args.")
+
+    return model
