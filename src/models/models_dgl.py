@@ -162,7 +162,7 @@ def get_dgl_model(args):
 
     if args.model_path and args.model_path.strip():
         # Load checkpoint dict
-        checkpoint = torch.load(args.model_path, map_location=args.device)
+        checkpoint = torch.load(args.model_path, map_location=args.device, weights_only=False)
         ckpt_args = checkpoint.get("args", {})
 
         # Keep only keys that match model constructor

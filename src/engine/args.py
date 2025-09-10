@@ -62,7 +62,7 @@ def train_test_parser() -> argparse.ArgumentParser:
     # Testing / solver
     parser.add_argument('--model_path', type=str, default=None,
                         help='Checkpoint path for testing or resume')
-    parser.add_argument('--time_limit', type=float, default=10.0, help='Search time limit per instance')
+    parser.add_argument('--time_limit', type=float, default=5./30, help='Search time limit per instance')
     parser.add_argument('--perturbation_moves', type=int, default=30,
                         help='Perturbation moves number for search-based tester')
     parser.add_argument('--perturbation_count', type=int, default=5,

@@ -40,13 +40,12 @@ class ATSPTesterDGL:
         opt_cost = optimal_cost(G, weight='weight')
         
         # Get scaled features and predict regrets
-        start_time = time.time()
         H = test_dataset.get_scaled_features(G).to(self.device)
         x = H.ndata['weight']
         
+        start_time = time.time()
         with torch.no_grad():
             y_pred = model(H, x)
-        
         model_time = time.time() - start_time
         
         # Inverse transform predictions
@@ -153,6 +152,15 @@ class ATSPTesterDGL:
         print(f"Testing model on {len(test_dataset)} instances of size {self.args.atsp_size}")
         print(f"Using relation types: {self.args.relation_types}")
         
+        # ---- Warm-up ----
+        print("Running warm-up forward pass...")
+        with torch.no_grad():
+            dummy_idx = 0
+            G = pickle.load(open(test_dataset.data_dir / test_dataset.instances[dummy_idx], 'rb'))
+            H = test_dataset.get_scaled_features(G).to(self.device)
+            x = H.ndata['weight']
+            _ = model(H, x)  # run once without measuring time
+            
         # Run tests
         results = self.test_all(model, test_dataset)
         

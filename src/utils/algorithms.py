@@ -230,70 +230,81 @@ def guided_local_search(G, init_tour, init_cost, t_lim, weight='weight', guides=
 
     edge_weight = nx.to_numpy_array(G, weight=weight)
     cnt_ans = 0
-    cur_tour, cur_cost, search_progress, cnt = local_search(init_tour, init_cost, edge_weight, first_improvement, t_lim)
+
+    # Initial local search
+    if time.time() >= t_lim:
+        return init_tour, init_cost, [], 0
+    cur_tour, cur_cost, search_progress, cnt = local_search(
+        init_tour, init_cost, edge_weight, first_improvement, t_lim
+    )
     cnt_ans += cnt
     best_tour, best_cost = cur_tour, cur_cost
+
     iter_i = 0
     while time.time() < t_lim:
-        guide = guides[iter_i % len(guides)]  # option change guide ever iteration (as in KGLS)
+        guide = guides[iter_i % len(guides)]
 
         # perturbation
         moves = 0
         cnt = 0
-        while moves < perturbation_moves and time.time() < t_lim:
+        while moves < perturbation_moves:
+            if time.time() >= t_lim:
+                return best_tour, best_cost, search_progress, cnt_ans
+
             # penalize edge
-            max_util = 0
-            max_util_e = None
+            max_util, max_util_e = -float("inf"), None
             for e in zip(cur_tour[:-1], cur_tour[1:]):
+                if time.time() >= t_lim:
+                    return best_tour, best_cost, search_progress, cnt_ans
                 util = G[e[0]][e[1]][guide] / (1 + G[e[0]][e[1]]['penalty'])
-                
-                if util > max_util or max_util_e is None:
-                    max_util = util
-                    max_util_e = e
+                if util > max_util:
+                    max_util, max_util_e = util, e
+
+            # add penalty
             G[max_util_e[0]][max_util_e[1]]['penalty'] += 1.
             edge_penalties = nx.to_numpy_array(G, weight='penalty')
             edge_weight_guided = edge_weight + k * edge_penalties
-            # apply operator to edge
+
+            # apply operators
             for n in max_util_e:
                 if time.time() >= t_lim:
-                    break
+                    return best_tour, best_cost, search_progress, cnt_ans
                 if n != 0:  # not the start
                     i = cur_tour.index(n)
-
                     for operator in [two_opt_o2a, relocate_o2a]:
-                        moved = False
+                        if time.time() >= t_lim:
+                            return best_tour, best_cost, search_progress, cnt_ans
 
+                        moved = False
                         delta, new_tour = operator(cur_tour, edge_weight_guided, i, first_improvement)
                         if delta < 0:
                             cur_cost = tour_cost(G, new_tour, weight)
                             cur_tour = new_tour
                             moved = True
+                            search_progress.append({'time': time.time(), 'cost': cur_cost})
 
-                            search_progress.append({
-                                'time': time.time(),
-                                'cost': cur_cost
-                            })
-                        if moved == False:
+                        if not moved:
                             cnt += 1
                             if cnt == 2:
                                 moved = True
                                 cnt = 0
-                                search_progress.append({
-                                'time': time.time(),
-                                'cost': cur_cost
-                                })
-                        moves += moved
+                                search_progress.append({'time': time.time(), 'cost': cur_cost})
+
+                        if moved:
+                            moves += 1
                         cnt_ans += 1
-            
-        # optimisation
-        if time.time() < t_lim:
-            cur_tour, cur_cost, new_search_progress, cnt = local_search(cur_tour, cur_cost, edge_weight, first_improvement, t_lim)
-            search_progress += new_search_progress
-            if cur_cost < best_cost:
-                best_tour, best_cost = cur_tour, cur_cost
+
+        # local search again
+        if time.time() >= t_lim:
+            return best_tour, best_cost, search_progress, cnt_ans
+
+        cur_tour, cur_cost, new_search_progress, cnt = local_search(
+            cur_tour, cur_cost, edge_weight, first_improvement, t_lim
+        )
+        search_progress += new_search_progress
+        if cur_cost < best_cost:
+            best_tour, best_cost = cur_tour, cur_cost
 
         iter_i += 1
-    
-    cnt_ans += cnt
 
     return best_tour, best_cost, search_progress, cnt_ans

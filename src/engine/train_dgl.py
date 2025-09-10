@@ -27,7 +27,7 @@ class ATSPTrainerDGL:
     def setup_directories(self):
         """Setup logging and checkpoint directories."""
         timestamp = datetime.datetime.now().strftime('%b%d_%H-%M-%S')
-        self.run_name = f'{timestamp}_{self.args.model}_ATSP{self.args.atsp_size}'
+        self.run_name = f'{timestamp}_{self.args.model}{self.args.agg}_ATSP{self.args.atsp_size}_Combo{"_".join(self.args.relation_types)}'
         self.log_dir = f'{self.args.tb_dir}/{self.run_name}'
         os.makedirs(self.log_dir, exist_ok=True)
     
@@ -55,10 +55,12 @@ class ATSPTrainerDGL:
         """Create data loaders."""
         self.train_loader = self.train_dataset.get_dataloader(
             batch_size=self.args.batch_size,
+            pin_memory=True
         )
         
         self.val_loader = self.val_dataset.get_dataloader(
             batch_size=self.args.batch_size,
+            pin_memory=True
         )
     
     def epoch_train(self, model, criterion, optimizer) -> float:
