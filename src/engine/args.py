@@ -34,7 +34,7 @@ def train_test_parser() -> argparse.ArgumentParser:
     parser.add_argument('--data_path', type=str, default=None,
                         help='Alternative single-path dataset (used by some test scripts)')
     parser.add_argument('--atsp_size', type=int, default=50)
-    parser.add_argument('--relation_types', nargs='+', default=['ss', 'st', 'tt', 'pp'],
+    parser.add_argument('--relation_types', nargs='+', default=['ss', 'tt', 'pp'],
                         help='Relation types used by dataset')
     parser.add_argument('--undirected', action='store_true', help='Use undirected graphs (PyG only)')
     parser.add_argument('--hetero', action='store_true', help='Use heterogeneous graphs')

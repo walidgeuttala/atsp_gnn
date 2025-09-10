@@ -21,7 +21,8 @@ class ATSPDatasetDGL:
         atsp_size: int,
         relation_types: Tuple[str, ...] = ("ss", "st", "tt", "pp"),
         device: str = "cpu",
-        undirected=True
+        undirected=True,
+        load_once=True,
     ):
         self.data_dir = pathlib.Path(data_dir)
         self.split = split
@@ -29,15 +30,25 @@ class ATSPDatasetDGL:
         self.device = device
         self.relation_types = sorted(relation_types)
         self.undirected = undirected
-        # Load components
+        self.load_once = load_once
+
+        # Load instance filenames, template, and scalers
         self.instances = self._load_instance_list()
-        self.template = self._load_template()
+        # self.template = self._load_template()
         self.scalers = self._load_scalers()
-        
-        # Pre-compute dimensions for ATSP
+
+        # Pre-compute edge count
         self.num_edges = atsp_size * (atsp_size - 1)
 
-        self.graphs = [self._process_graph(self._load_instance_graph(f)) for f in self.instances]
+        # Preload only if required
+        if self.load_once:
+            self.template = self._load_template()
+            self.graphs = [
+                self._process_graph(self._load_instance_graph(f))
+                for f in self.instances
+            ]
+        else:
+            self.graphs = None  # lazy loading mode
 
     def _load_instance_list(self) -> List[str]:
         """Load instance filenames for this split."""
@@ -73,7 +84,15 @@ class ATSPDatasetDGL:
     
     def __getitem__(self, idx: int) -> dgl.DGLGraph:
         """Get processed graph instance."""
-        return self.graphs[idx]
+        if self.load_once:
+            return self.graphs[idx]
+        else:
+            # Load one at a time
+            graph = self._load_instance_graph(self.instances[idx])
+            H = self._process_graph(graph)
+            import gc; gc.collect()
+
+            return H, graph
     
     def _load_instance_graph(self, instance_file):
         with open(self.data_dir / instance_file, 'rb') as f:
@@ -89,10 +108,11 @@ class ATSPDatasetDGL:
         scaled_regrets = self.scalers.transform(regrets, 'regret')
         
         # Create graph with features
-        graph = self.template.clone()
-        graph.ndata['weight'] = torch.from_numpy(scaled_weights).unsqueeze(1).to(self.device).float()
-        graph.ndata['regret'] = torch.from_numpy(scaled_regrets).unsqueeze(1).to(self.device).float()
-        graph.ndata['in_solution'] = torch.from_numpy(in_solution).unsqueeze(1).to(self.device).float()
+        graph = self.template.clone() if self.load_once else self._load_template()
+        
+        graph.ndata['weight'] = torch.from_numpy(scaled_weights).unsqueeze(1).to(self.device).to(torch.float32)
+        graph.ndata['regret'] = torch.from_numpy(scaled_regrets).unsqueeze(1).to(self.device).to(torch.float32)
+        graph.ndata['in_solution'] = torch.from_numpy(in_solution).unsqueeze(1).to(self.device).to(torch.float32)
         
         # Add metadata
         if hasattr(G, 'graph'):
@@ -102,9 +122,9 @@ class ATSPDatasetDGL:
     
     def _extract_features(self, G: nx.DiGraph) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Extract features in consistent edge order."""
-        weights = np.zeros(self.num_edges, dtype=np.float32)
-        regrets = np.zeros(self.num_edges, dtype=np.float32)
-        in_solution = np.zeros(self.num_edges, dtype=np.float32)
+        weights = torch.empty(self.num_edges, dtype=torch.float32)
+        regrets = torch.empty(self.num_edges, dtype=torch.float32)
+        in_solution = torch.empty(self.num_edges, dtype=torch.float32)
         
         edge_idx = 0
         for i in range(self.atsp_size):
@@ -113,10 +133,9 @@ class ATSPDatasetDGL:
                     continue
                 
                 edge = (i, j)
-                if edge in G.edges:
-                    weights[edge_idx] = G.edges[edge].get('weight', 0.0)
-                    regrets[edge_idx] = G.edges[edge].get('regret', 0.0)
-                    in_solution[edge_idx] = 1.0 if G.edges[edge].get('in_solution', False) else 0.0
+                weights[edge_idx] = G.edges[(idx_i, idx_j)]['weight']
+                regrets[edge_idx] = G.edges[(idx_i, idx_j)]['regret']
+                in_solution[edge_idx] = G.edges[(idx_i, idx_j)]['in_solution']
                 
                 edge_idx += 1
         

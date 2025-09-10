@@ -6,10 +6,12 @@ import numpy as np
 import torch
 import pickle
 import tqdm
+import gc
 
 from data.dataset_dgl import ATSPDatasetDGL
 from utils.algorithms import guided_local_search, nearest_neighbor
 from utils.atsp_utils import tour_cost, optimal_cost
+from ..utils import print_gpu_memory
 
 class ATSPTesterDGL:
     """Testing manager for DGL-based ATSP models with Guided Local Search."""
@@ -26,28 +28,27 @@ class ATSPTesterDGL:
             atsp_size=self.args.atsp_size,
             relation_types=tuple(self.args.relation_types),
             undirected=self.args.undirected,
-            device=self.device
+            device=self.device,
+            load_once=False
         )
     
     def test_instance(self, model, test_dataset, instance_idx: int) -> Dict[str, Any]:
         """Test single instance with GLS."""
         # Load original NetworkX graph
-        instance_path = test_dataset.data_dir / test_dataset.instances[instance_idx]
-        with open(instance_path, 'rb') as f:
-            G = pickle.load(f)
-        
+        print_gpu_memory('before loading G')
+        H, G = test_dataset[instance_idx]
+        print_gpu_memory('after loading G')
         # Get optimal cost
-        opt_cost = optimal_cost(G, weight='weight')
+        opt_cost = G.graph.get('cost')
         
         # Get scaled features and predict regrets
-        H = test_dataset.get_scaled_features(G).to(self.device)
         x = H.ndata['weight']
-        
+        print_gpu_memory('after scale')
         start_time = time.time()
         with torch.no_grad():
             y_pred = model(H, x)
         model_time = time.time() - start_time
-        
+        print_gpu_memory('after forward')
         # Inverse transform predictions
         regret_pred = test_dataset.scalers.inverse_transform(
             y_pred.cpu().numpy().flatten(), 'regret'
@@ -68,7 +69,7 @@ class ATSPTesterDGL:
         # Initial tour using predicted regrets
         init_tour = nearest_neighbor(G, start=0, weight='regret_pred')
         init_cost = tour_cost(G, init_tour)
-        
+        print_gpu_memory('start gls')
         # Guided Local Search
         gls_start = time.time()
         time_limit = gls_start + self.args.time_limit
@@ -86,8 +87,8 @@ class ATSPTesterDGL:
         # Calculate gaps
         init_gap = (init_cost / opt_cost - 1) * 100
         final_gap = (final_cost / opt_cost - 1) * 100
-        
-        return {
+        print_gpu_memory('end gls')
+        result = {
             'opt_cost': opt_cost,
             'init_cost': init_cost,
             'final_cost': final_cost,
@@ -98,6 +99,13 @@ class ATSPTesterDGL:
             'gls_time': gls_time,
             'instance': test_dataset.instances[instance_idx]
         }
+    
+        # Free GPU memory
+        del H, x, y_pred, regret_pred
+        gc.collect()
+        torch.cuda.empty_cache()
+        return result
+        
     
     def test_all(self, model, test_dataset) -> Dict[str, Any]:
         """Test all instances in dataset."""
@@ -147,6 +155,7 @@ class ATSPTesterDGL:
         # Load model and parameters
         
         # Create test dataset
+        print_gpu_memory('before loading')
         test_dataset = self.create_test_dataset()
         
         print(f"Testing model on {len(test_dataset)} instances of size {self.args.atsp_size}")
@@ -154,13 +163,22 @@ class ATSPTesterDGL:
         
         # ---- Warm-up ----
         print("Running warm-up forward pass...")
+        model.eval()
+        print_gpu_memory('before warm')
         with torch.no_grad():
             dummy_idx = 0
             G = pickle.load(open(test_dataset.data_dir / test_dataset.instances[dummy_idx], 'rb'))
-            H = test_dataset.get_scaled_features(G).to(self.device)
+            H = test_dataset.get_scaled_features(G)
             x = H.ndata['weight']
+            print_gpu_memory('after laoding exmaple ')
+            gc.collect()
+            torch.cuda.empty_cache()
+            print_gpu_memory('after laoding exmaple 2')
             _ = model(H, x)  # run once without measuring time
-            
+            del H, x, G
+            gc.collect()
+            torch.cuda.empty_cache()
+        print_gpu_memory('after')
         # Run tests
         results = self.test_all(model, test_dataset)
         

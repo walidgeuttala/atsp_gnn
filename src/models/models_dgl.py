@@ -10,15 +10,12 @@ class MLP(nn.Module):
         super().__init__()
         self.fc1 = nn.Linear(in_dim, hidden_dim)
         self.fc2 = nn.Linear(hidden_dim, out_dim)
+        self.batch_norm = nn.BatchNorm1d((hidden_dim))
         self.skip = skip
-        if skip:
-            self.fc_skip = nn.Linear(in_dim, out_dim)
 
     def forward(self, x):
-        h = F.leaky_relu(self.fc1(x))
-        h = self.fc2(h)
-        if self.skip:
-            h += self.fc_skip(x)
+        h = F.relu(self.batch_norm(self.fc1(x)))
+        h = self.fc2(h) + h if self.skip else self.fc2(h)
         return h
 
 class SkipConnection(nn.Module):
@@ -28,7 +25,7 @@ class SkipConnection(nn.Module):
 
     def forward(self, x, G=None):
         if G is not None:
-            y = self.module(G, x).view(G.number_of_nodes(), -1)
+            y = self.module(G, x).flatten(1)
         else:
             y = self.module(x)
         return x + y
@@ -36,7 +33,7 @@ class SkipConnection(nn.Module):
 class AttentionLayer(nn.Module):
     def __init__(self, embed_dim, num_heads, hidden_dim):
         super().__init__()
-        self.gat = dglnn.GATConv(embed_dim, embed_dim // num_heads, num_heads)
+        self.gat = SkipConnection(dglnn.GATConv(embed_dim, embed_dim // num_heads, num_heads))
 
         self.feed_forward = nn.Sequential(
             nn.BatchNorm1d(embed_dim),
@@ -51,8 +48,8 @@ class AttentionLayer(nn.Module):
         )
 
     def forward(self, g, h):
-        h = self.gat(g, h).flatten(1)
-        return F.leaky_relu(h)
+        h = self.gat(h, G=g).flatten(1)
+        return self.feed_forward(h)
 
 # Consolidated EdgePropertyPredictionModel (covers variants 0-3)
 class EdgePropertyPredictionModel(nn.Module):

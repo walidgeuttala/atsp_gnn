@@ -3,9 +3,8 @@ import torch
 import numpy as np
 import networkx as nx
 import dgl
-
-import gnngls
-from gnngls import algorithms
+from atsp_utils import tour_cost
+from algorithms import nearest_neighbor
 import psutil
 
 def print_gpu_memory(text):
@@ -20,22 +19,22 @@ def print_gpu_memory(text):
     # Print the RAM usage in GB
     print(f"RAM used: {used_gb:.2f} GB", flush=True)
     print(f"RAM available: {free_gb:.2f} GB", flush=True)
-    # if torch.cuda.is_available():
-    #     # Get the allocated memory (used)
-    #     allocated_memory = torch.cuda.memory_allocated()
-    #     # Get the cached memory (reserved)
-    #     cached_memory = torch.cuda.memory_reserved()
-    #     # Get the total memory on the GPU
-    #     total_memory = torch.cuda.get_device_properties(0).total_memory
-    #     # Calculate free memory
-    #     free_memory = total_memory - allocated_memory - cached_memory
-    #     print(text, flush=True)
-    #     print(f"GPU Memory Allocated: {allocated_memory / (1024 ** 2):.2f} MB", flush=True)
-    #     print(f"GPU Memory Cached: {cached_memory / (1024 ** 2):.2f} MB", flush=True)
-    #     print(f"GPU Memory Free: {free_memory / (1024 ** 2):.2f} MB", flush=True)
-    #     print(f"Total GPU Memory: {total_memory / (1024 ** 2):.2f} MB", flush=True)
-    # else:
-    #     print("No GPU available.", flush=True)
+    if torch.cuda.is_available():
+        # Get the allocated memory (used)
+        allocated_memory = torch.cuda.memory_allocated()
+        # Get the cached memory (reserved)
+        cached_memory = torch.cuda.memory_reserved()
+        # Get the total memory on the GPU
+        total_memory = torch.cuda.get_device_properties(0).total_memory
+        # Calculate free memory
+        free_memory = total_memory - allocated_memory - cached_memory
+        print(text, flush=True)
+        print(f"GPU Memory Allocated: {allocated_memory / (1024 ** 2):.2f} MB", flush=True)
+        print(f"GPU Memory Cached: {cached_memory / (1024 ** 2):.2f} MB", flush=True)
+        print(f"GPU Memory Free: {free_memory / (1024 ** 2):.2f} MB", flush=True)
+        print(f"Total GPU Memory: {total_memory / (1024 ** 2):.2f} MB", flush=True)
+    else:
+        print("No GPU available.", flush=True)
 
 def calculate_statistics(tensors):
     stats = {}
@@ -70,8 +69,8 @@ def atsp_results(model, args, val_set):
         
         opt_cost = gnngls.optimal_cost(G, weight='weight')
         
-        init_tour = algorithms.nearest_neighbor(G, 0, weight='regret_pred')
-        init_cost = gnngls.tour_cost(G, init_tour)
+        init_tour = nearest_neighbor(G, 0, weight='regret_pred')
+        init_cost = tour_cost(G, init_tour)
         result2['avg_corr'] += correlation_matrix(y_pred.cpu(), H.ndata['regret'].cpu())
         result2['avg_corr_cosin'] += cosine_similarity(y_pred.cpu().flatten(), H.ndata['regret'].cpu().flatten())
         result2['avg_init_cost'] += init_cost
