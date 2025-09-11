@@ -1,0 +1,30 @@
+# Python cache and bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments / dependency locks
+.venv/
+.env/
+Pipfile.lock
+
+# Data files
+data/raw/
+data/processed/
+*.pkl
+*.pt
+*.npy
+*.npz
+
+# Job logs / runtime files
+jobs
+slurm-*.out
+
+# IDE / editor configs
+.vscode
+.idea/
+
+# Local projects / saved models
+LKH-3.0.9/
+saved_model/
+saved_dataset/
