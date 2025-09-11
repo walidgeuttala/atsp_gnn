@@ -127,15 +127,17 @@ class DatasetPreprocessor:
             subdir.mkdir(exist_ok=True)
         
         for size in atsp_sizes:
+            # Build one full template for all relation types
+            full_transform = LineGraphTransform(
+                relation_types=relation_types,
+                half_st=half_st,
+                directed=directed
+            )
+            full_template = full_transform.save_template(size, templates_dir / f"full_template_{size}.dgl")
+            full_template = self.remove_duplicate_edges(full_template)
             for r in range(1, len(relation_types) + 1):
                 for rel_combo in combinations(relation_types, r):
                     rel_combo = sorted(rel_combo)
-                    combo_transform = LineGraphTransform(
-                        relation_types=rel_combo,
-                        half_st=half_st,
-                        directed=directed,
-                    )
-                    
                     rel_str = "_".join(rel_combo)
                     subdir = subdirs[r] if r < len(relation_types) else subdirs[len(relation_types)]
                     dgl_template_path = subdir / f"template_{size}_{rel_str}.dgl"
@@ -156,23 +158,31 @@ class DatasetPreprocessor:
                         except Exception as e:
                             print(f"Failed PyG template {size}, {rel_str}: {e}")
     
-    # def _dgl_to_pyg(self, dgl_graph: dgl.DGLGraph) -> 'Data':
-    #     """Convert a DGL graph to a PyG Data object."""
-    #     edge_index = torch.stack([dgl_graph.edges()[0], dgl_graph.edges()[1]], dim=0)
-    #     x = dgl_graph.ndata.get('feat', torch.ones((dgl_graph.number_of_nodes(), 1)))
-    #     edge_attr = dgl_graph.edata.get('feat', torch.ones((dgl_graph.number_of_edges(), 1)))
-        
-    #     data = Data(x=x, edge_index=edge_index, edge_attr=edge_attr)
-    #     if dgl_graph.is_homogeneous:
-    #         data.edge_type = torch.zeros(dgl_graph.number_of_edges(), dtype=torch.long)
-    #     else:
-    #         edge_types = []
-    #         for etype in dgl_graph.etypes:
-    #             mask = dgl_graph.edges(etype=etype)[0]
-    #             edge_types.extend([dgl_graph.get_etype_id(etype)] * mask.size(0))
-    #         data.edge_type = torch.tensor(edge_types, dtype=torch.long)
-        
-    #     return data
+
+    def remove_duplicate_edges(full_template: dgl.DGLGraph) -> dgl.DGLGraph:
+        """
+        Remove duplicate edges from a DGL heterograph.
+        Works for each relation type independently.
+        """
+        node_type = full_template.ntypes[0]  # assuming single node type
+        new_edge_dict = {}
+
+        for etype in full_template.etypes:
+            src, dst = full_template.edges(etype=etype)
+            # Stack src and dst, then use torch.unique to remove duplicates
+            edges = torch.stack([src, dst], dim=1)
+            edges = torch.unique(edges, dim=0)
+            new_edge_dict[(node_type, etype, node_type)] = (edges[:, 0], edges[:, 1])
+
+        num_nodes = full_template.num_nodes(node_type)
+        clean_graph = dgl.heterograph(new_edge_dict, num_nodes_dict={node_type: num_nodes})
+
+        # Copy node data
+        for key, val in full_template.ndata.items():
+            clean_graph.ndata[key] = val.clone()
+
+        return clean_graph
+
     def _dgl_to_pyg(self, dgl_graph: dgl.DGLGraph):
         """Convert a DGL graph to a PyG Data/HeteroData object."""
         from torch_geometric.utils import from_dgl
