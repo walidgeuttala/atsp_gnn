@@ -1,79 +1,62 @@
+import torch
 import pickle
-import numpy as np
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-from typing import Dict, Any, List
+from typing import List, Dict, Any
 import pathlib
 
 class FeatureScaler:
-    """Handles feature scaling for graph datasets."""
+    """MinMax scaling for graph features using PyTorch (float32)."""
     
-    def __init__(self, scaler_type: str = "minmax"):
-        self.scaler_type = scaler_type
-        self.scalers: Dict[str, Any] = {}
-        self._create_scalers()
+    def __init__(self):
+        self.mins: Dict[str, torch.Tensor] = {}
+        self.maxs: Dict[str, torch.Tensor] = {}
     
-    def _create_scalers(self):
-        """Initialize scalers based on type."""
-        scaler_class = {
-            "minmax": MinMaxScaler,
-            "standard": StandardScaler, 
-            "robust": RobustScaler
-        }.get(self.scaler_type, MinMaxScaler)
-        
-        self.scalers = {
-            'weight': scaler_class(),
-            'regret': scaler_class()
-        }
-    
-    def fit_from_dataset(self, dataset_dir: pathlib.Path, train_files: List[str]):
-        """Fit scalers on training data."""
+    def fit_from_dataset(self, dataset_dir: pathlib.Path, train_files: List[str], feature_names: List[str]):
+        """Compute min and max for each feature from training dataset."""
         import networkx as nx
         import tqdm
         
-        # Collect all features for fitting
-        all_features = {key: [] for key in self.scalers.keys()}
-        
-        for filename in tqdm.tqdm(train_files, desc="Fitting scalers"):
-            filepath = dataset_dir / filename
-            with open(filepath, 'rb') as f:
-                G = pickle.load(f)
-            for edge in G.edges():
-                for feature_name in self.scalers.keys():
-                    if feature_name in G.edges[edge]:
-                        all_features[feature_name].append(G.edges[edge][feature_name])
-        
-        # Fit each scaler
-        for feature_name, scaler in self.scalers.items():
-            if all_features[feature_name]:
-                feature_array = np.array(all_features[feature_name]).reshape(-1, 1)
-                scaler.fit(feature_array)
+        for feature in feature_names:
+            all_vals = []
+            for filename in tqdm.tqdm(train_files, desc=f"Fitting {feature}"):
+                filepath = dataset_dir / filename
+                with open(filepath, 'rb') as f:
+                    G = pickle.load(f)
+                for u, v in G.edges():
+                    if feature in G.edges[u, v]:
+                        all_vals.append(float(G.edges[u, v][feature]))
+            if all_vals:
+                vals = torch.tensor(all_vals, dtype=torch.float32)
+                self.mins[feature] = vals.min()
+                self.maxs[feature] = vals.max()
+            else:
+                self.mins[feature] = torch.tensor(0.0)
+                self.maxs[feature] = torch.tensor(1.0)
     
-    def transform(self, features: np.ndarray, feature_name: str) -> np.ndarray:
-        """Transform features using fitted scaler."""
-        if feature_name not in self.scalers:
-            raise ValueError(f"No scaler found for feature: {feature_name}")
-        return self.scalers[feature_name].transform(features.reshape(-1, 1)).flatten()
+    def transform(self, features: torch.Tensor, feature_name: str) -> torch.Tensor:
+        """Scale features to [0,1]."""
+        if feature_name not in self.mins or feature_name not in self.maxs:
+            raise ValueError(f"Feature {feature_name} not fitted")
+        min_val = self.mins[feature_name]
+        max_val = self.maxs[feature_name]
+        return (features - min_val) / (max_val - min_val + 1e-8)
     
-    def inverse_transform(self, features: np.ndarray, feature_name: str) -> np.ndarray:
-        """Inverse transform features."""
-        if feature_name not in self.scalers:
-            raise ValueError(f"No scaler found for feature: {feature_name}")
-        return self.scalers[feature_name].inverse_transform(features.reshape(-1, 1)).flatten()
+    def inverse_transform(self, features: torch.Tensor, feature_name: str) -> torch.Tensor:
+        """Inverse MinMax transform."""
+        if feature_name not in self.mins or feature_name not in self.maxs:
+            raise ValueError(f"Feature {feature_name} not fitted")
+        min_val = self.mins[feature_name]
+        max_val = self.maxs[feature_name]
+        return features * (max_val - min_val + 1e-8) + min_val
     
     def save(self, filepath: pathlib.Path):
-        """Save fitted scalers."""
-        with open(filepath, 'wb') as f:
-            pickle.dump({
-                'scalers': self.scalers,
-                'scaler_type': self.scaler_type
-            }, f)
+        """Save the min/max values."""
+        torch.save({'mins': self.mins, 'maxs': self.maxs}, filepath)
     
     @classmethod
-    def load(cls, filepath: pathlib.Path) -> 'FeatureScaler':
-        """Load fitted scalers."""
-        with open(filepath, 'rb') as f:
-            data = pickle.load(f)
-        
-        instance = cls(scaler_type=data['scaler_type'])
-        instance.scalers = data['scalers']
+    def load(cls, filepath: pathlib.Path) -> 'MinMaxFeatureScaler':
+        """Load saved min/max values."""
+        data = torch.load(filepath)
+        instance = cls()
+        instance.mins = data['mins']
+        instance.maxs = data['maxs']
         return instance

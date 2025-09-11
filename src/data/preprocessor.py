@@ -67,41 +67,38 @@ class DatasetPreprocessor:
         
         return train_set, val_set, test_set
     
-    def fit_scalers(self, files: List[str], scaler_type: str = "minmax"):
+    def fit_scalers(self, files: List[str]):
         """Fit and save feature scalers on provided data."""
-        scaler = FeatureScaler(scaler_type=scaler_type)
-        scaler.fit_from_dataset(self.dataset_dir, files)
+        scaler = FeatureScaler()  # PyTorch-based MinMax
+        scaler.fit_from_dataset(self.dataset_dir, files, feature_names=['weight', 'regret'])
         
         scalers_path = self.dataset_dir / 'scalers.pkl'
         scaler.save(scalers_path)
         print(f"Scalers saved to {scalers_path}")
         return scaler
-    
-    def load_scalers(self, scaler_path: pathlib.Path):
-        """Load existing feature scalers from file."""
-        if not scaler_path.exists():
-            raise FileNotFoundError(f"Scaler file not found: {scaler_path}")
-        scaler = FeatureScaler.load(scaler_path)
-        print(f"Loaded scalers from {scaler_path}")
-        return scaler
 
-    def get_or_create_scalers(
-        self, train_files: List[str], val_files: List[str], test_files: List[str], scaler_type: str
-    ):
+
+    def _load_scalers(self) -> FeatureScaler:
+        """Internal method to load fitted scalers."""
+        scalers_path = self.dataset_dir / 'scalers.pkl'
+        return FeatureScaler.load(scalers_path)
+
+    def get_or_create_scalers(self, train_files: List[str], val_files: List[str], test_files: List[str]):
         """Load existing scalers or fit new scalers based on priority: train > test > val."""
         scaler_path = self.dataset_dir / 'scalers.pkl'
         if scaler_path.exists():
-            return self.load_scalers(scaler_path)
+            print("Loading existing scalers.")
+            return self._load_scalers()
 
-        if len(train_files) > 0:
+        if train_files:
             print("Fitting scalers on training set.")
-            return self.fit_scalers(train_files, scaler_type)
-        elif len(test_files) > 0:
+            return self.fit_scalers(train_files)
+        elif test_files:
             print("Fitting scalers on test set (no training set available).")
-            return self.fit_scalers(test_files, scaler_type)
-        elif len(val_files) > 0:
+            return self.fit_scalers(test_files)
+        elif val_files:
             print("Fitting scalers on validation set (no training or test sets available).")
-            return self.fit_scalers(val_files, scaler_type)
+            return self.fit_scalers(val_files)
         else:
             raise ValueError("No data available to fit scalers.")
     
@@ -109,7 +106,6 @@ class DatasetPreprocessor:
         self,
         atsp_sizes: List[int],
         relation_types: Tuple[str, ...] = ("ss", "st", "tt", "pp"),
-        half_st: bool = False,
         directed: bool = False,
         save_pyg: bool = True
     ):
@@ -130,11 +126,9 @@ class DatasetPreprocessor:
             # Build one full template for all relation types
             full_transform = LineGraphTransform(
                 relation_types=relation_types,
-                half_st=half_st,
                 directed=directed
             )
             full_template = full_transform.save_template(size, templates_dir / f"full_template_{size}.dgl")
-            full_template = self.remove_duplicate_edges(full_template)
             for r in range(1, len(relation_types) + 1):
                 for rel_combo in combinations(relation_types, r):
                     rel_combo = sorted(rel_combo)
@@ -144,7 +138,7 @@ class DatasetPreprocessor:
                     pyg_template_path = subdir / f"template_{size}_{rel_str}.pt"
                     
                     try:
-                        template = combo_transform.save_template(size, dgl_template_path)
+                        template = full_transform.extract_subgraph(full_template, rel_combo)
                         print(f"DGL template {size}, {rel_str} saved to {dgl_template_path}")
                     except Exception as e:
                         print(f"Failed DGL template {size}, {rel_str}: {e}")
@@ -158,31 +152,6 @@ class DatasetPreprocessor:
                         except Exception as e:
                             print(f"Failed PyG template {size}, {rel_str}: {e}")
     
-
-    def remove_duplicate_edges(full_template: dgl.DGLGraph) -> dgl.DGLGraph:
-        """
-        Remove duplicate edges from a DGL heterograph.
-        Works for each relation type independently.
-        """
-        node_type = full_template.ntypes[0]  # assuming single node type
-        new_edge_dict = {}
-
-        for etype in full_template.etypes:
-            src, dst = full_template.edges(etype=etype)
-            # Stack src and dst, then use torch.unique to remove duplicates
-            edges = torch.stack([src, dst], dim=1)
-            edges = torch.unique(edges, dim=0)
-            new_edge_dict[(node_type, etype, node_type)] = (edges[:, 0], edges[:, 1])
-
-        num_nodes = full_template.num_nodes(node_type)
-        clean_graph = dgl.heterograph(new_edge_dict, num_nodes_dict={node_type: num_nodes})
-
-        # Copy node data
-        for key, val in full_template.ndata.items():
-            clean_graph.ndata[key] = val.clone()
-
-        return clean_graph
-
     def _dgl_to_pyg(self, dgl_graph: dgl.DGLGraph):
         """Convert a DGL graph to a PyG Data/HeteroData object."""
         from torch_geometric.utils import from_dgl
@@ -196,7 +165,6 @@ def main():
     parser.add_argument('--n_val', type=int, default=100)
     parser.add_argument('--n_test', type=int, default=100)
     parser.add_argument('--atsp_size', type=int, default=10)
-    parser.add_argument('--scaler_type', type=str, default='minmax', choices=['minmax', 'standard', 'robust'])
     parser.add_argument('--relation_types', nargs='+', default=['ss', 'st', 'tt', 'pp'])
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--save_pyg', action='store_true')
@@ -209,7 +177,7 @@ def main():
     )
 
     # Load existing scalers or fit new scalers with priority
-    preprocessor.get_or_create_scalers(train_files, val_files, test_files, args.scaler_type)
+    preprocessor.get_or_create_scalers(train_files, val_files, test_files)
 
     # Create templates
     preprocessor.create_templates(

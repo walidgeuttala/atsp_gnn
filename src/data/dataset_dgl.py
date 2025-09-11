@@ -74,10 +74,13 @@ class ATSPDatasetDGL:
 
         return template
     
-    def _load_scalers(self) -> FeatureScaler:
-        """Load fitted scalers."""
-        scalers_path = self.data_dir / 'scalers.pkl'
-        return FeatureScaler.load(scalers_path)
+    def _load_scalers(self, scaler_path: pathlib.Path) -> FeatureScaler:
+        """Load existing feature scalers from file."""
+        if not scaler_path.exists():
+            raise FileNotFoundError(f"Scaler file not found: {scaler_path}")
+        scaler = FeatureScaler.load(scaler_path)
+        print(f"Loaded scalers from {scaler_path}")
+        return scaler
     
     def __len__(self) -> int:
         return len(self.instances)
@@ -97,28 +100,6 @@ class ATSPDatasetDGL:
     def _load_instance_graph(self, instance_file):
         with open(self.data_dir / instance_file, 'rb') as f:
             return pickle.load(f)
-
-    def _process_graph(self, G: nx.DiGraph) -> dgl.DGLGraph:
-        """Convert NetworkX graph to DGL with features."""
-        # Extract features in consistent order
-        weights, regrets, in_solution = self._extract_features(G)
-        
-        # Apply scaling
-        scaled_weights = self.scalers.transform(weights, 'weight')
-        scaled_regrets = self.scalers.transform(regrets, 'regret')
-        
-        # Create graph with features
-        graph = self.template.clone() if self.load_once else self._load_template()
-        
-        graph.ndata['weight'] = torch.from_numpy(scaled_weights).unsqueeze(1).to(self.device).to(torch.float32)
-        graph.ndata['regret'] = torch.from_numpy(scaled_regrets).unsqueeze(1).to(self.device).to(torch.float32)
-        graph.ndata['in_solution'] = torch.from_numpy(in_solution).unsqueeze(1).to(self.device).to(torch.float32)
-        
-        # Add metadata
-        if hasattr(G, 'graph'):
-            graph.graph_attr = dict(G.graph)
-        
-        return graph
     
     def _extract_features(self, G: nx.DiGraph) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Extract features in consistent edge order."""
@@ -133,13 +114,30 @@ class ATSPDatasetDGL:
                     continue
                 
                 edge = (i, j)
-                weights[edge_idx] = G.edges[(idx_i, idx_j)]['weight']
-                regrets[edge_idx] = G.edges[(idx_i, idx_j)]['regret']
-                in_solution[edge_idx] = G.edges[(idx_i, idx_j)]['in_solution']
-                
+                weights[edge_idx] = G.edges[(i, j)]['weight']
+                regrets[edge_idx] = G.edges[(i, j)]['regret']
+                in_solution[edge_idx] = G.edges[(i, j)]['in_solution']
                 edge_idx += 1
         
         return weights, regrets, in_solution
+
+    def _process_graph(self, G: nx.DiGraph) -> dgl.DGLGraph:
+        """Convert NetworkX graph to DGL with features."""
+        # Extract features in consistent order
+        weights, regrets, in_solution = self._extract_features(G)
+        
+        # Create graph with features
+        graph = self.template.clone() if self.load_once else self._load_template()
+        
+        # Apply scaling
+        graph.ndata['weight'] = self.scalers.transform(weights, 'weight').unsqueeze(1).to(self.device)
+        graph.ndata['regret'] = self.scalers.transform(regrets, 'regret').unsqueeze(1).to(self.device)
+        graph.ndata['in_solution'] = self.scalers.transform(in_solution, 'in_solution').unsqueeze(1).to(self.device)
+        # Add metadata
+        if hasattr(G, 'graph'):
+            graph.graph_attr = dict(G.graph)
+        
+        return graph
     
     def get_dataloader(self, batch_size: int = 32, shuffle: bool = None, **kwargs):
         """Get DataLoader with DGL batching."""
