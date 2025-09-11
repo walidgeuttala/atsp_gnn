@@ -47,15 +47,15 @@ class LineGraphTransform:
         
         # Build edge relationships
         for x in range(n):
-            for y in range(n - 1):
+            for y in range(x+1, n):
                 for z in range(y + 1, n):
                     if 'ss' in self.relation_types:
-                                edge_tensors['ss'][idx] = torch.tensor([edge_id[(x, y)], edge_id[(x, z)]], dtype=torch.int32)
-                            if 'st' in self.relation_types:
-                                edge_tensors['st'][idx] = torch.tensor([edge_id[(x, y)], edge_id[(z, x)]], dtype=torch.int32)
-                            if 'tt' in self.relation_types:
-                                edge_tensors['tt'][idx] = torch.tensor([edge_id[(y, x)], edge_id[(z, x)]], dtype=torch.int32)
-                            idx += 1
+                        edge_tensors['ss'][idx] = torch.tensor([edge_id[(x, y)], edge_id[(x, z)]], dtype=torch.int32)
+                    if 'st' in self.relation_types:
+                        edge_tensors['st'][idx] = torch.tensor([edge_id[(x, y)], edge_id[(z, x)]], dtype=torch.int32)
+                    if 'tt' in self.relation_types:
+                        edge_tensors['tt'][idx] = torch.tensor([edge_id[(y, x)], edge_id[(z, x)]], dtype=torch.int32)
+                    idx += 1
             
             if 'pp' in self.relation_types:
                 for y in range(x + 1, n):
@@ -190,5 +190,5 @@ class LineGraphTransform:
 
 if __name__ == '__main__':
     transform = LineGraphTransform()
-    full_g = transform.create_line_graph_template(n_nodes=5)  # example
+    full_g = transform.create_line_graph_template(n_nodes=3)  # example
     transform.plot_full_graph(full_g, output_dir="../jobs/runs/plots")
