@@ -55,7 +55,7 @@ class FeatureScaler:
     @classmethod
     def load(cls, filepath: pathlib.Path) -> 'MinMaxFeatureScaler':
         """Load saved min/max values."""
-        data = torch.load(filepath)
+        data = torch.load(filepath, weights_only=False)
         instance = cls()
         instance.mins = data['mins']
         instance.maxs = data['maxs']

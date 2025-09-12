@@ -35,7 +35,7 @@ class ATSPDatasetDGL:
         # Load instance filenames, template, and scalers
         self.instances = self._load_instance_list()
         # self.template = self._load_template()
-        self.scalers = self._load_scalers()
+        self.scalers = FeatureScaler.load(self.data_dir / 'scalers.pkl')
 
         # Pre-compute edge count
         self.num_edges = atsp_size * (atsp_size - 1)
@@ -132,7 +132,7 @@ class ATSPDatasetDGL:
         # Apply scaling
         graph.ndata['weight'] = self.scalers.transform(weights, 'weight').unsqueeze(1).to(self.device)
         graph.ndata['regret'] = self.scalers.transform(regrets, 'regret').unsqueeze(1).to(self.device)
-        graph.ndata['in_solution'] = self.scalers.transform(in_solution, 'in_solution').unsqueeze(1).to(self.device)
+        graph.ndata['in_solution'] = in_solution.unsqueeze(1).to(self.device)
         # Add metadata
         if hasattr(G, 'graph'):
             graph.graph_attr = dict(G.graph)

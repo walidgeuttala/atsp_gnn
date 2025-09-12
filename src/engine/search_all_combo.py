@@ -1,28 +1,3 @@
-"""
-Hyperparameter search script for ATSP training/testing.
-
-Place this file in the same package as your other engine modules (e.g. src/engine/search_hyperparams.py).
-
-What it does (behavioural summary):
-- Grid-searches relation-type subsets and aggregation choices ("sum"/"concat").
-- For each combination it runs an Optuna study to pick:
-    * hidden_dim (power of two, <= 32)
-    * num_heads (must divide hidden_dim evenly and >= 1)
-    * lr_init (optional continuous parameter)
-- Training is performed with args.atsp_size = 50.
-- Validation: evaluates with args.atsp_size = 50 and args.atsp_size = 100; objective is the average validation metric (lower is better).
-- Final test is run on atsp_size = 500 for the best found configuration.
-- Gracefully handles CUDA OOM during training/testing by dropping that trial/config and continuing.
-
-NOTE: This script assumes the project exposes the same APIs as in your `run` script and `args.py`:
-- parse_args() to get default args
-- model factory `get_<framework>_model(args)` in src.models.models_<framework>
-- Trainer/Tester classes in src.engine.train_* and src.engine.test_*
-- Trainer.train(model, trial_id=...) returns a dict-like result containing validation metrics. The script tries several likely keys.
-
-If your Trainer/Tester use different return values, adapt `_extract_val_scores` below.
-"""
-
 import itertools
 import importlib
 import logging
@@ -34,6 +9,7 @@ from copy import deepcopy
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import optuna
+import torch
 
 # make relative imports work when this file is executed as a script
 sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
@@ -56,7 +32,7 @@ def all_nonempty_subsets(seq: List[str]) -> Iterable[Tuple[str, ...]]:
     """Generate all non-empty subsets (as tuples) of a list in deterministic order."""
     for r in range(1, len(seq) + 1):
         for comb in itertools.combinations(seq, r):
-            yield comb
+            yield tuple(sorted(comb))
 
 
 def divisors(n: int) -> List[int]:
@@ -145,9 +121,9 @@ def objective_factory(args: Any, relation_subset: Tuple[str, ...], agg_choice: s
         hidden_dim = int(trial.suggest_categorical("hidden_dim", [1, 2, 4, 8, 16, 32]))
         # choose num_heads as a divisor of hidden_dim (except 0)
         divs = divisors(hidden_dim)
-        num_heads = int(trial.suggest_categorical("num_heads", divs))
-        lr_init = float(trial.suggest_loguniform("lr_init", 1e-5, 1e-2))
-
+        num_heads = int(trial.suggest_categorical("num_heads", [1, 2, 4, 8]))
+        lr_init = float(trial.suggest_float("lr_init", 1e-5, 1e-2, log=True))
+        num_gnn_layers = int(trial.suggest_int("num_gnn_layers", 1, 3))
         # prepare args copy for this run
         run_args = deepcopy(args)
         run_args.relation_types = list(relation_subset)
@@ -156,10 +132,13 @@ def objective_factory(args: Any, relation_subset: Tuple[str, ...], agg_choice: s
         run_args.num_heads = num_heads
         run_args.lr_init = lr_init
         run_args.atsp_size = 50  # training size as requested
-
+        run_args.num_gnn_layers = num_gnn_layers
+        run_args.n_epochs = n_epochs_optuna  # short training for search
         # seed for reproducibility
         fix_seed(run_args.seed)
 
+        if hidden_dim < num_heads:
+            raise optuna.TrialPruned()  # skip this trial
         # instantiate modules
         trainer_module = f"src.engine.train_{framework}"
         tester_module = f"src.engine.test_{framework}"
@@ -253,7 +232,7 @@ def objective_factory(args: Any, relation_subset: Tuple[str, ...], agg_choice: s
     return objective
 
 
-def run_search(args: Any, n_optuna_trials: int = 20, n_jobs: int = 1, n_epochs_optuna: int = 2):
+def run_search(args: Any, n_optuna_trials: int = 20, n_jobs: int = 1, n_epochs_optuna: int = 1):
     framework = args.framework.lower()
 
     relation_space = list(all_nonempty_subsets(list(args.relation_types)))
@@ -277,10 +256,16 @@ def run_search(args: Any, n_optuna_trials: int = 20, n_jobs: int = 1, n_epochs_o
             except Exception as e:
                 logger.warning("Optuna run failed: %s", e)
 
-            best = study.best_trial
+            best = getattr(study, "best_trial", None)
+            if best is None or best.value is None:
+                logger.info("No successful trials for rel=%s agg=%s", rel_subset, agg_choice)
+                best_value = float("inf")
+                best_params = {}
+            else:
+                best_value = best.value
+                best_params = best.params
             logger.info("Best trial for rel=%s agg=%s -> value=%.6f params=%s",
-                        rel_subset, agg_choice, best.value if best else float('inf'), best.params if best else {})
-
+                        rel_subset, agg_choice, best_value, best_params)
             config = {
                 "relations": rel_subset,
                 "agg": agg_choice,
@@ -298,22 +283,15 @@ def run_search(args: Any, n_optuna_trials: int = 20, n_jobs: int = 1, n_epochs_o
     # final full test for the best configuration on size 500
     if best_overall["config"] is not None:
         best_conf = best_overall["config"]
-        logger.info("Running final test on size=500 for best config: %s", best_conf)
+        logger.info("Running final training & test for best config: %s", best_conf)
 
-        # build final args/model/trainer/tester
         final_args = deepcopy(args)
         final_args.relation_types = list(best_conf["relations"])
         final_args.agg = best_conf["agg"]
-        # set hyperparams
         for k, v in best_conf["best_params"].items():
-            if hasattr(final_args, k):
-                setattr(final_args, k, v)
-            else:
-                # also set as attribute so factories may see them
-                setattr(final_args, k, v)
-
-        # run training on atsp_size=50 (as before) to create checkpoint then test on 500
+            setattr(final_args, k, v)
         final_args.atsp_size = 50
+
         fix_seed(final_args.seed)
         try:
             trainer_mod = locate(f"src.engine.train_{final_args.framework}")
@@ -329,6 +307,13 @@ def run_search(args: Any, n_optuna_trials: int = 20, n_jobs: int = 1, n_epochs_o
             except OOMError:
                 logger.warning("OOM during final training; aborting final test")
                 return results_summary, best_overall
+
+            # Save the best model with descriptive name (no timestamp)
+            rel_name = "-".join(final_args.relation_types)
+            model_filename = f"{final_args.model}_{final_args.agg}_{rel_name}_best.pt"
+            save_path = os.path.join(getattr(args, "tb_dir", "./runs"), model_filename)
+            torch.save(model.state_dict(), save_path)
+            logger.info("Saved best model to %s", save_path)
 
             # run tester on 500
             final_args.atsp_size = 500
@@ -349,7 +334,6 @@ def run_search(args: Any, n_optuna_trials: int = 20, n_jobs: int = 1, n_epochs_o
     summary_file = os.path.join(out_path, "hyperparam_search_summary.yaml")
     try:
         import yaml
-
         with open(summary_file, "w") as f:
             yaml.safe_dump({"results": results_summary, "best": best_overall}, f)
         logger.info("Wrote search summary to %s", summary_file)
@@ -361,11 +345,8 @@ def run_search(args: Any, n_optuna_trials: int = 20, n_jobs: int = 1, n_epochs_o
 
 if __name__ == "__main__":
     parser = parse_args()
-    # override some defaults for searching
     parser.n_trials = 1
-
-    # Optuna options could be supplied via environment variables or CLI in the future
-    N_OPTUNA_TRIALS = 24
+    N_OPTUNA_TRIALS = 2
     N_JOBS = 1
 
     try:

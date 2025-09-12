@@ -105,7 +105,6 @@ class HetroGAT(nn.Module):
         self.mlp_layers = nn.ModuleList()
         agg_mode = 'stack' if agg == 'concat' else agg  # Treat 'concat' as 'stack'
         hidden_dim2 = hidden_dim if agg_mode == 'sum' else hidden_dim * self.num_edge_types
-
         for _ in range(num_gnn_layers):
             conv_dict = {rel: dglnn.GATConv(hidden_dim, hidden_dim // num_heads, num_heads) for rel in self.relation_types}
             self.gnn_layers.append(dglnn.HeteroGraphConv(conv_dict, aggregate=agg_mode))
@@ -164,7 +163,6 @@ def get_dgl_model(args):
 
         # Keep only keys that match model constructor
         model_args = {k: ckpt_args[k] for k in model_signature.parameters if k in ckpt_args}
-
         # Instantiate model and load weights
         model = model_class(**model_args).to(args.device)
         model.load_state_dict(checkpoint['model_state_dict'])

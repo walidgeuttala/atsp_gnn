@@ -139,6 +139,7 @@ class DatasetPreprocessor:
                     
                     try:
                         template = full_transform.extract_subgraph(full_template, rel_combo)
+                        dgl.save_graphs(str(dgl_template_path), [template])
                         print(f"DGL template {size}, {rel_str} saved to {dgl_template_path}")
                     except Exception as e:
                         print(f"Failed DGL template {size}, {rel_str}: {e}")

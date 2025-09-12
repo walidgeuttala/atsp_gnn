@@ -34,7 +34,7 @@ def train_test_parser() -> argparse.ArgumentParser:
     parser.add_argument('--data_path', type=str, default=None,
                         help='Alternative single-path dataset (used by some test scripts)')
     parser.add_argument('--atsp_size', type=int, default=50)
-    parser.add_argument('--relation_types', nargs='+', default=['ss', 'tt', 'pp'],
+    parser.add_argument('--relation_types', nargs='+', default=['ss', 'st', 'tt', 'pp'],
                         help='Relation types used by dataset')
     parser.add_argument('--undirected', action='store_true', help='Use undirected graphs (PyG only)')
     parser.add_argument('--hetero', action='store_true', help='Use heterogeneous graphs')
@@ -42,10 +42,10 @@ def train_test_parser() -> argparse.ArgumentParser:
     # Model / architecture
     parser.add_argument('--model', type=str, default='gcn', help='Model name in your models factory')
     parser.add_argument('--input_dim', type=int, default=1)
-    parser.add_argument('--hidden_dim', type=int, default=16)
+    parser.add_argument('--hidden_dim', type=int, default=8)
     parser.add_argument('--output_dim', type=int, default=1)
-    parser.add_argument('--n_gnn_layers', type=int, default=2)
-    parser.add_argument('--n_heads', type=int, default=4)
+    parser.add_argument('--num_gnn_layers', type=int, default=2)
+    parser.add_argument('--num_heads', type=int, default=2)
     parser.add_argument('--jk', type=str, default=None, choices=[None, 'cat'])
     parser.add_argument('--skip_connection', action='store_true')
     parser.add_argument('--agg', type=str, default='sum', choices=['sum', 'concat'])
@@ -56,7 +56,7 @@ def train_test_parser() -> argparse.ArgumentParser:
     parser.add_argument('--lr_init', type=float, default=1e-3)
     parser.add_argument('--lr_decay', type=float, default=0.99)
     parser.add_argument('--min_delta', type=float, default=1e-6)
-    parser.add_argument('--patience', type=int, default=20)
+    parser.add_argument('--patience', type=int, default=10)
     parser.add_argument('--checkpoint_freq', type=int, default=10)
 
     # Testing / solver
