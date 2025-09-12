@@ -1,31 +1,25 @@
-# Create new environment with Python 3.10
-conda create -n gnn2 python=3.10 -y
-conda activate gnn2
+# Create new Conda environment with Python 3.11
+conda create -n graph2 python=3.11 -y
+conda activate graph2
 
-# Set environment variables
-export PYTHONPATH=/project/c_gnn_001/code/tsp/atsp_gnn/:$PYTHONPATH
+# Set environment variables for CUDA
 export CUDA_HOME=/opt/software/packages/cuda/12.1
-export LD_LIBRARY_PATH=/project/c_gnn_001/glibc_install/glibc-2.31/lib:$CUDA_HOME/lib64:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 
-# Install PyTorch 2.1.0 + CUDA 12.1
-pip install torch==2.1.0+cu121 torchvision==0.16.0+cu121 torchaudio==2.1.0+cu121 --index-url https://download.pytorch.org/whl/cu121
+# Install PyTorch 2.4.0 with CUDA 12.1 support using conda
+conda install pytorch==2.4.0 torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia -y
 
-pip install torch_geometric -f https://data.pyg.org/whl/torch-2.1.0+cu121.html
-# Install PyTorch Geometric core + cluster + spline, but skip scatter/sparse here
-pip install pyg_lib==0.3.1+pt21cu121 torch_cluster==1.6.3+pt21cu121 \
-    torch_spline_conv==1.2.2+pt21cu121 -f https://data.pyg.org/whl/torch-2.1.0+cu121.html
+# Install PyTorch Geometric with CUDA 12.1 support
+conda install pyg -c pyg -y
 
 # Install DGL with CUDA 12.1 support
-pip install dgl -f https://data.dgl.ai/wheels/torch-2.1/cu121/repo.html
+pip3 install  dgl -f https://data.dgl.ai/wheels/torch-2.4/cu121/repo.html
 
-# Install additional Python libraries
-pip install scikit-learn==1.5.2 pandas pyyaml "numpy<2" tqdm
+# Install additional common libraries for data science and graph-related tasks
+conda install -c conda-forge scikit-learn pandas numpy tqdm matplotlib networkx tsplib95 optuna -y
 
-pip install torch-scatter -f https://data.pyg.org/whl/torch-2.1.0+cu121.html
+# Install LKH via pip (if not available in conda-forge)
+pip3 install lkh
 
-# Install local builds for pytorch_scatter and pytorch_sparse
-# pip install -e ~/c_gnn_001/torch_sparse_build/pytorch_scatter
-pip install -e ~/c_gnn_001/torch_sparse_build/pytorch_sparse
-pip3 install tsplib95 lkh
-conda install matplotlib networkx
-echo "Environment setup complete. Activate with: conda activate gnn2"
+echo "Conda environment 'graph' created with Python 3.11, CUDA 12.1 support, and Optuna."
+echo "Activate with: conda activate graph"
