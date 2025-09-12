@@ -1,20 +1,11 @@
 import datetime
 import json
 import os
-import time
-from typing import Dict, Any, Optional
-
+from typing import Dict, Any
 import torch
-import dgl
-from torch.utils.data import DataLoader
 import tqdm.auto as tqdm
 
 from ..data.dataset_dgl import ATSPDatasetDGL
-import argparse
-
-from src.models.models_dgl import get_dgl_model
-from src.utils import fix_seed
-
 
 class ATSPTrainerDGL:
     """Training manager for DGL-based ATSP models."""
@@ -85,25 +76,25 @@ class ATSPTrainerDGL:
 
         return epoch_loss / total_samples if total_samples > 0 else 0.0
     
-    def epoch_test(self, model, criterion) -> float:
-        """Validation epoch."""
+    def epoch_test_loader(self, model, criterion, val_loader):
         model.eval()
-        epoch_loss = 0
-        total_samples = 0  
+        total_loss = 0
+        total_samples = 0
 
         with torch.no_grad():
-            for batch_i, batch in enumerate(self.val_loader):
+            for batch in val_loader:
                 batch = batch.to(self.device)
                 x = batch.ndata['weight']
                 y = batch.ndata['regret']
-                
+
                 y_pred = model(batch, x)
                 loss = criterion(y_pred, y.type_as(y_pred))
-                epoch_loss += loss.item()
+                total_loss += loss.item()
                 total_samples += y.shape[0]
 
-        return epoch_loss / total_samples if total_samples > 0 else 0.0
-    
+        return total_loss / total_samples if total_samples > 0 else 0.0
+
+
     def train(self, model, trial_id: int = 0) -> Dict[str, Any]:
         """Main training loop."""
         self.create_datasets()
@@ -131,7 +122,7 @@ class ATSPTrainerDGL:
         for epoch in pbar:
             # Training
             train_loss = self.epoch_train(model, criterion, optimizer)
-            val_loss = self.epoch_test(model, criterion)
+            val_loss = self.epoch_test_loader(model, criterion, self.val_loader)
             
             results['train_losses'].append(train_loss)
             results['val_losses'].append(val_loss)

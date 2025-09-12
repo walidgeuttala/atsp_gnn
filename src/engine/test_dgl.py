@@ -1,375 +1,183 @@
-"""
-Hyperparameter search script for ATSP training/testing.
-
-Place this file in the same package as your other engine modules (e.g. src/engine/search_hyperparams.py).
-
-What it does (behavioural summary):
-- Grid-searches relation-type subsets and aggregation choices ("sum"/"concat").
-- For each combination it runs an Optuna study to pick:
-    * hidden_dim (power of two, <= 32)
-    * num_heads (must divide hidden_dim evenly and >= 1)
-    * lr_init (optional continuous parameter)
-- Training is performed with args.atsp_size = 50.
-- Validation: evaluates with args.atsp_size = 50 and args.atsp_size = 100; objective is the average validation metric (lower is better).
-- Final test is run on atsp_size = 500 for the best found configuration.
-- Gracefully handles CUDA OOM during training/testing by dropping that trial/config and continuing.
-
-NOTE: This script assumes the project exposes the same APIs as in your `run` script and `args.py`:
-- parse_args() to get default args
-- model factory `get_<framework>_model(args)` in src.models.models_<framework>
-- Trainer/Tester classes in src.engine.train_* and src.engine.test_*
-- Trainer.train(model, trial_id=...) returns a dict-like result containing validation metrics. The script tries several likely keys.
-
-If your Trainer/Tester use different return values, adapt `_extract_val_scores` below.
-"""
-
-import itertools
-import importlib
-import logging
-import math
+import json
+import time
 import os
-import sys
-import traceback
-from copy import deepcopy
-from typing import Any, Dict, Iterable, List, Optional, Tuple
-
-import optuna
-
-# make relative imports work when this file is executed as a script
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
-
-from .args import parse_args
-from ..utils import fix_seed
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-logger = logging.getLogger("search")
-
-
-def locate(module_name: str):
-    try:
-        return importlib.import_module(module_name)
-    except Exception as e:
-        raise ImportError(f"Cannot import {module_name}: {e}")
-
-
-def all_nonempty_subsets(seq: List[str]) -> Iterable[Tuple[str, ...]]:
-    """Generate all non-empty subsets (as tuples) of a list in deterministic order."""
-    for r in range(1, len(seq) + 1):
-        for comb in itertools.combinations(seq, r):
-            yield comb
-
-
-def divisors(n: int) -> List[int]:
-    return [d for d in range(1, n + 1) if n % d == 0]
-
-
-def _extract_val_scores(results: Any) -> Tuple[Optional[float], Optional[float]]:
-    """Try to extract validation scores for sizes 50 and 100 from trainer results.
-
-    Returns (score50, score100) where score may be None if not found.
-    We interpret lower-is-better (e.g. loss). If your trainer reports metrics where higher is better,
-    invert them before returning (or change objective accordingly).
-    """
-    # results might be a dict-like object
-    candidates = {}
-    if results is None:
-        return None, None
-    if isinstance(results, dict):
-        for k, v in results.items():
-            candidates[k.lower()] = v
-    # try many key names commonly used
-    possible_keys_50 = [
-        "val_loss_50",
-        "val_50",
-        "val_metric_50",
-        "val_score_50",
-        "val_loss",
-        "val_metric",
-        "val_score",
-    ]
-    possible_keys_100 = [
-        "val_loss_100",
-        "val_100",
-        "val_metric_100",
-        "val_score_100",
-    ]
-
-    def extract_from_candidates(keys):
-        for k in keys:
-            if k in candidates:
-                try:
-                    return float(candidates[k])
-                except Exception:
-                    pass
-        return None
-
-    s50 = extract_from_candidates([k.lower() for k in possible_keys_50])
-    s100 = extract_from_candidates([k.lower() for k in possible_keys_100])
-
-    return s50, s100
-
-
-class OOMError(Exception):
-    pass
-
-
-def safe_step(func, *args, **kwargs):
-    """Run func(*args, **kwargs) and catch CUDA OOMs. Re-raises other exceptions."""
-    try:
-        return func(*args, **kwargs)
-    except Exception as e:
-        msg = str(e).lower()
-        if "out of memory" in msg or "cuda" in msg and "out of memory" in msg:
-            # clear cache if torch is available
-            try:
-                import torch
-
-                torch.cuda.empty_cache()
-            except Exception:
-                pass
-            raise OOMError("CUDA OOM during run")
-        else:
-            raise
-
-
-def objective_factory(args: Any, relation_subset: Tuple[str, ...], agg_choice: str, framework: str, n_epochs_optuna: int):
-    """Return an Optuna objective function that will:
-    - instantiate model with sampled params
-    - train on atsp_size=50
-    - validate on atsp_size=50 and 100
-    - return average validation score (lower is better)
-    """
-
-    def objective(trial: optuna.trial.Trial) -> float:
-        # sample hyperparams
-        hidden_dim = int(trial.suggest_categorical("hidden_dim", [1, 2, 4, 8, 16, 32]))
-        # choose num_heads as a divisor of hidden_dim (except 0)
-        divs = divisors(hidden_dim)
-        num_heads = int(trial.suggest_categorical("num_heads", divs))
-        lr_init = float(trial.suggest_loguniform("lr_init", 1e-5, 1e-2))
-
-        # prepare args copy for this run
-        run_args = deepcopy(args)
-        run_args.relation_types = list(relation_subset)
-        run_args.agg = agg_choice
-        run_args.hidden_dim = hidden_dim
-        run_args.num_heads = num_heads
-        run_args.lr_init = lr_init
-        run_args.atsp_size = 50  # training size as requested
-
-        # seed for reproducibility
-        fix_seed(run_args.seed)
-
-        # instantiate modules
-        trainer_module = f"src.engine.train_{framework}"
-        tester_module = f"src.engine.test_{framework}"
-        try:
-            trainer_mod = locate(trainer_module)
-            TrainerClass = getattr(trainer_mod, "ATSPTrainerDGL", None) or getattr(trainer_mod, "ATSPTrainerPyG", None)
-            if TrainerClass is None:
-                raise ImportError(f"Trainer class not found in {trainer_module}")
-
-            models_mod = locate(f"src.models.models_{framework}")
-            get_model = getattr(models_mod, f"get_{framework}_model", None)
-            if get_model is None:
-                raise ImportError("Model factory not found")
-
-            model = get_model(run_args)
-            trainer = TrainerClass(run_args)
-
-            # run training -- wrapped to catch OOM
-            try:
-                results = safe_step(trainer.train, model, 0)
-            except OOMError:
-                logger.warning("OOM during training; dropping this trial")
-                raise optuna.TrialPruned()
-
-            # try to extract validation scores
-            s50, s100 = _extract_val_scores(results)
-
-            # If trainer didn't return both, attempt to run the tester (best-effort)
-            if s50 is None or s100 is None:
-                try:
-                    # if trainer saved model to args.model_path, tester can evaluate it.
-                    tester_mod = locate(tester_module)
-                    TesterClass = getattr(tester_mod, "ATSPTesterDGL", None) or getattr(tester_mod, "ATSPTesterPyG", None)
-                    tester = TesterClass(run_args)
-
-                    # eval at 50
-                    run_args.atsp_size = 50
-                    try:
-                        res50 = safe_step(tester.run_test, model)
-                    except OOMError:
-                        logger.warning("OOM during validation at size 50; marking trial as pruned")
-                        raise optuna.TrialPruned()
-
-                    s50_new, _ = _extract_val_scores(res50)
-                    if s50 is None:
-                        s50 = s50_new
-
-                    # eval at 100
-                    run_args.atsp_size = 100
-                    try:
-                        res100 = safe_step(tester.run_test, model)
-                    except OOMError:
-                        logger.warning("OOM during validation at size 100; marking trial as pruned")
-                        raise optuna.TrialPruned()
-
-                    _, s100_new = _extract_val_scores(res100)
-                    if s100 is None:
-                        s100 = s100_new
-                except OOMError:
-                    raise optuna.TrialPruned()
-                except Exception:
-                    # best-effort: if tester isn't available or fails, continue with whatever we have
-                    logger.debug("Tester evaluation failed: %s", traceback.format_exc())
-
-            # If still missing any scores, penalize this trial
-            if s50 is None and s100 is None:
-                logger.warning("No validation scores found; penalizing trial")
-                return float("inf")
-            # replace missing one with the other (conservative)
-            if s50 is None:
-                s50 = s100
-            if s100 is None:
-                s100 = s50
-
-            avg_val = (s50 + s100) / 2.0
-            # report intermediate value
-            trial.report(avg_val, step=0)
-            if trial.should_prune():
-                raise optuna.TrialPruned()
-
-            return avg_val
-
-        except OOMError:
-            # mark as pruned when OOM occurs
-            raise optuna.TrialPruned()
-        except Exception:
-            logger.exception("Unexpected error in objective: %s", traceback.format_exc())
-            # return a very bad score so this config is not selected
-            return float("inf")
-
-    return objective
-
-
-def run_search(args: Any, n_optuna_trials: int = 20, n_jobs: int = 1, n_epochs_optuna: int = 2):
-    framework = args.framework.lower()
-
-    relation_space = list(all_nonempty_subsets(list(args.relation_types)))
-    agg_space = ["sum", "concat"]
-
-    logger.info("Starting grid over %d relation subsets x %d aggs = %d combinations",
-                len(relation_space), len(agg_space), len(relation_space) * len(agg_space))
-
-    best_overall = {"score": float("inf"), "config": None}
-    results_summary = []
-
-    for rel_subset in relation_space:
-        for agg_choice in agg_space:
-            logger.info("Searching for relations=%s agg=%s", rel_subset, agg_choice)
-
-            study = optuna.create_study(direction="minimize")
-            objective = objective_factory(args, rel_subset, agg_choice, framework, n_epochs_optuna)
-
-            try:
-                study.optimize(objective, n_trials=n_optuna_trials, n_jobs=n_jobs)
-            except Exception as e:
-                logger.warning("Optuna run failed: %s", e)
-
-            best = study.best_trial
-            logger.info("Best trial for rel=%s agg=%s -> value=%.6f params=%s",
-                        rel_subset, agg_choice, best.value if best else float('inf'), best.params if best else {})
-
-            config = {
-                "relations": rel_subset,
-                "agg": agg_choice,
-                "best_params": best.params if best else {},
-                "best_value": best.value if best else float('inf')
-            }
-            results_summary.append(config)
-
-            if best and best.value < best_overall["score"]:
-                best_overall["score"] = best.value
-                best_overall["config"] = deepcopy(config)
-
-    logger.info("Search finished. Best overall: %s", best_overall)
-
-    # final full test for the best configuration on size 500
-    if best_overall["config"] is not None:
-        best_conf = best_overall["config"]
-        logger.info("Running final test on size=500 for best config: %s", best_conf)
-
-        # build final args/model/trainer/tester
-        final_args = deepcopy(args)
-        final_args.relation_types = list(best_conf["relations"])
-        final_args.agg = best_conf["agg"]
-        # set hyperparams
-        for k, v in best_conf["best_params"].items():
-            if hasattr(final_args, k):
-                setattr(final_args, k, v)
-            else:
-                # also set as attribute so factories may see them
-                setattr(final_args, k, v)
-
-        # run training on atsp_size=50 (as before) to create checkpoint then test on 500
-        final_args.atsp_size = 50
-        fix_seed(final_args.seed)
-        try:
-            trainer_mod = locate(f"src.engine.train_{final_args.framework}")
-            TrainerClass = getattr(trainer_mod, "ATSPTrainerDGL", None) or getattr(trainer_mod, "ATSPTrainerPyG", None)
-            models_mod = locate(f"src.models.models_{final_args.framework}")
-            get_model = getattr(models_mod, f"get_{final_args.framework}_model")
-
-            model = get_model(final_args)
-            trainer = TrainerClass(final_args)
-
-            try:
-                safe_step(trainer.train, model, 0)
-            except OOMError:
-                logger.warning("OOM during final training; aborting final test")
-                return results_summary, best_overall
-
-            # run tester on 500
-            final_args.atsp_size = 500
-            tester_mod = locate(f"src.engine.test_{final_args.framework}")
-            TesterClass = getattr(tester_mod, "ATSPTesterDGL", None) or getattr(tester_mod, "ATSPTesterPyG", None)
-            tester = TesterClass(final_args)
-            try:
-                test_res = safe_step(tester.run_test, model)
-                logger.info("Final test results: %s", test_res)
-            except OOMError:
-                logger.warning("OOM during final test on size 500; dropping final result")
-        except Exception:
-            logger.exception("Failed during final test stage: %s", traceback.format_exc())
-
-    # save summary to disk
-    out_path = getattr(args, "tb_dir", "./runs")
-    os.makedirs(out_path, exist_ok=True)
-    summary_file = os.path.join(out_path, "hyperparam_search_summary.yaml")
-    try:
-        import yaml
-
-        with open(summary_file, "w") as f:
-            yaml.safe_dump({"results": results_summary, "best": best_overall}, f)
-        logger.info("Wrote search summary to %s", summary_file)
-    except Exception:
-        logger.exception("Failed to write summary file")
-
-    return results_summary, best_overall
-
-
-if __name__ == "__main__":
-    parser = parse_args()
-    # override some defaults for searching
-    parser.n_trials = 1
-
-    # Optuna options could be supplied via environment variables or CLI in the future
-    N_OPTUNA_TRIALS = 24
-    N_JOBS = 1
-
-    try:
-        results, best = run_search(parser, n_optuna_trials=N_OPTUNA_TRIALS, n_jobs=N_JOBS)
-        logger.info("Search completed. Best: %s", best)
-    except Exception:
-        logger.exception("Search failed: %s", traceback.format_exc())
+from typing import Dict, Any, Callable
+import numpy as np
+import torch
+import pickle
+import tqdm
+import gc
+
+from data.dataset_dgl import ATSPDatasetDGL
+from utils.algorithms import guided_local_search, nearest_neighbor
+from utils.atsp_utils import tour_cost, optimal_cost
+
+class ATSPTesterDGL:
+    """Testing manager for DGL-based ATSP models with Guided Local Search."""
+    
+    def __init__(self, args, get_model_fn: Callable = None):
+        self.args = args
+        self.device = torch.device('cuda' if args.device == 'cuda' and torch.cuda.is_available() else 'cpu')
+    
+    def create_test_dataset(self):
+        """Create test dataset with training parameters."""
+        return ATSPDatasetDGL(
+            data_dir=self.args.data_path,
+            split='test',
+            atsp_size=self.args.atsp_size,
+            relation_types=tuple(self.args.relation_types),
+            undirected=self.args.undirected,
+            device=self.device,
+            load_once=False
+        )
+    
+    def test_instance(self, model, test_dataset, instance_idx: int) -> Dict[str, Any]:
+        """Test single instance with GLS."""
+        # Load original NetworkX graph
+        H, G = test_dataset[instance_idx]
+        # Get optimal cost
+        opt_cost = optimal_cost(G)
+        
+        # Get scaled features and predict regrets
+        x = H.ndata['weight']
+        start_time = time.time()
+        with torch.no_grad():
+            y_pred = model(H, x)
+        model_time = time.time() - start_time
+        # Inverse transform predictions
+        regret_pred = test_dataset.scalers.inverse_transform(
+            y_pred.cpu().numpy().flatten(), 'regret'
+        )
+        
+        # Add predictions to graph
+        edge_idx = 0
+        for i in range(self.args.atsp_size):
+            for j in range(self.args.atsp_size):
+                if i == j:
+                    continue
+                
+                edge = (i, j)
+                if edge in G.edges:
+                    G.edges[edge]['regret_pred'] = max(regret_pred[edge_idx], 0.0)
+                edge_idx += 1
+        
+        # Initial tour using predicted regrets
+        init_tour = nearest_neighbor(G, start=0, weight='regret_pred')
+        init_cost = tour_cost(G, init_tour)
+        # Guided Local Search
+        gls_start = time.time()
+        time_limit = gls_start + self.args.time_limit
+        
+        best_tour, final_cost, search_progress, num_iterations = guided_local_search(
+            G, init_tour, init_cost, time_limit,
+            weight='weight',
+            guides=['regret_pred'],
+            perturbation_moves=self.args.perturbation_moves,
+            first_improvement=False
+        )
+        
+        gls_time = time.time() - gls_start
+        
+        # Calculate gaps
+        init_gap = (init_cost / opt_cost - 1) * 100
+        final_gap = (final_cost / opt_cost - 1) * 100
+        result = {
+            'opt_cost': opt_cost,
+            'init_cost': init_cost,
+            'final_cost': final_cost,
+            'init_gap': init_gap,
+            'final_gap': final_gap,
+            'num_iteration': num_iterations,
+            'model_time': model_time,
+            'gls_time': gls_time,
+            'instance': test_dataset.instances[instance_idx]
+        }
+    
+        # Free GPU memory
+        del H, x, y_pred, regret_pred
+        gc.collect()
+        torch.cuda.empty_cache()
+        return result
+        
+    
+    def test_all(self, model, test_dataset) -> Dict[str, Any]:
+        """Test all instances in dataset."""
+        results = {
+            'instance_results': [],
+            'opt_costs': [],
+            'init_costs': [],
+            'final_costs': [],
+            'init_gaps': [],
+            'final_gaps': [],
+            'num_iterations': [],
+            'model_times': [],
+            'gls_times': []
+        }
+        
+        pbar = tqdm.tqdm(range(len(test_dataset)), desc="Testing instances")
+        
+        for idx in pbar:
+            instance_result = self.test_instance(model, test_dataset, idx)
+            results['instance_results'].append(instance_result)
+            
+            # Aggregate results
+            for key in ['opt_costs', 'init_costs', 'final_costs', 'init_gaps', 
+                       'final_gaps', 'num_iterations', 'model_times', 'gls_times']:
+                field = key[:-1] if key.endswith('s') else key  # Remove 's' for field name
+                results[key].append(instance_result[field])
+            
+            # Update progress bar
+            pbar.set_postfix({
+                'avg_init_gap': f"{np.mean(results['init_gaps']):.2f}%",
+                'avg_final_gap': f"{np.mean(results['final_gaps']):.2f}%",
+                'avg_iterations': f"{np.mean(results['num_iterations']):.1f}"
+            })
+        
+        # Calculate aggregated statistics
+        for key in ['opt_costs', 'init_costs', 'final_costs', 'init_gaps', 
+                   'final_gaps', 'num_iterations', 'model_times', 'gls_times']:
+            values = results[key]
+            results[f'avg_{key}'] = np.mean(values)
+            results[f'std_{key}'] = np.std(values)
+            results[f'total_{key}'] = np.sum(values) if 'time' in key else None
+        
+        return results
+    
+    def run_test(self, model) -> Dict[str, Any]:
+        """Main testing pipeline."""
+        # Load model and parameters
+        
+        # Create test dataset
+        test_dataset = self.create_test_dataset()
+        
+        print(f"Testing model on {len(test_dataset)} instances of size {self.args.atsp_size}")
+        print(f"Using relation types: {self.args.relation_types}")
+        
+        # ---- Warm-up ----
+        print("Running warm-up forward pass...")
+        model.eval()
+        with torch.no_grad():
+            dummy_idx = 0
+            G = pickle.load(open(test_dataset.data_dir / test_dataset.instances[dummy_idx], 'rb'))
+            H = test_dataset.get_scaled_features(G)
+            x = H.ndata['weight']
+            gc.collect()
+            torch.cuda.empty_cache()
+            _ = model(H, x)  # run once without measuring time
+            del H, x, G
+            gc.collect()
+            torch.cuda.empty_cache()
+        # Run tests
+        results = self.test_all(model, test_dataset)
+        
+        # Save results
+        output_dir = os.path.join(
+            os.path.dirname(self.args.model_path),
+            f'test_atsp{self.args.atsp_size}'
+        )
+        os.makedirs(output_dir, exist_ok=True)
+        
+        with open(os.path.join(output_dir, f'results_test_{self.args.atsp_size}.json'), 'w') as f:
+            json.dump(results, f, indent=2)
+        
+        return results

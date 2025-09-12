@@ -5,7 +5,7 @@ from typing import Tuple
 import pathlib
 import matplotlib.pyplot as plt
 import numpy as np
-
+from typing import Dict
 class LineGraphTransform:
     """Handles line graph transformations for complete directed graphs."""
     
@@ -213,9 +213,91 @@ class LineGraphTransform:
         dgl.save_graphs(str(save_path), [template])
         return template
 
+    def count_connected_components_per_relation(self, full_template: dgl.DGLGraph) -> Dict[str, int]:
+        """
+        Count the number of connected components for each individual relation type subgraph.
+        
+        Args:
+            full_template: The full DGL heterograph containing all relations.
+        
+        Returns:
+            Dictionary mapping each relation type to its connected component count.
+        """
+        component_counts = {}
+        
+        # Iterate through each relation type individually
+        for relation_type in full_template.etypes:
+            # Extract subgraph for this single relation type
+            subgraph = self.extract_subgraph(full_template, (relation_type,))
+            
+            # Convert to NetworkX undirected graph for connected components analysis
+            nx_graph = nx.Graph()
+            
+            # Add all nodes from the line graph
+            num_nodes = subgraph.num_nodes()
+            nx_graph.add_nodes_from(range(num_nodes))
+            
+            # Add edges for this relation type
+            if relation_type in subgraph.etypes:
+                src, dst = subgraph.edges(etype=relation_type)
+                edges = list(zip(src.tolist(), dst.tolist()))
+                nx_graph.add_edges_from(edges)
+            
+            # Count connected components
+            num_components = nx.number_connected_components(nx_graph)
+            component_counts[relation_type] = num_components
+        
+        return component_counts
 
+
+    def analyze_individual_connectivity(self, n_nodes: int, output_results: bool = True) -> Dict:
+        """
+        Analyze connectivity for each individual relation type subgraph.
+        
+        Args:
+            n_nodes: Number of nodes in the original complete graph.
+            output_results: Whether to print results.
+        
+        Returns:
+            Dictionary containing connectivity analysis for each relation type.
+        """
+        # Create full template
+        full_template = self.create_line_graph_template(n_nodes)
+        
+        # Get component counts for each relation type
+        component_counts = self.count_connected_components_per_relation(full_template)
+        
+        # Organize results
+        results = {
+            'n_nodes_original': n_nodes,
+            'n_nodes_line_graph': full_template.num_nodes(),
+            'relation_component_counts': component_counts
+        }
+        
+        if output_results:
+            print(f"\n=== Connected Components Analysis ===")
+            print(f"Original graph nodes: {n_nodes}")
+            print(f"Line graph nodes: {full_template.num_nodes()}")
+            print(f"\nConnected Components per Relation Type:")
+            print("-" * 40)
+            
+            for relation_type, count in component_counts.items():
+                print(f"{relation_type:>4}: {count:>3} components")
+            
+            print("-" * 40)
+        
+        return results
 
 if __name__ == '__main__':
     transform = LineGraphTransform()
-    full_g = transform.create_line_graph_template(n_nodes=3)  # example
-    transform.plot_full_graph(full_g, output_dir="../jobs/runs/plots")
+    n_nodes = 100
+    full_g = transform.create_line_graph_template(n_nodes=n_nodes)  # example
+    # transform.plot_full_graph(full_g, output_dir="../jobs/runs/plots")
+    # Just get the counts
+    # well the CC number is equal to n for the case of ss and tt, while st have 1 in other hand the pp have n*(n-1)/2
+    counts = transform.count_connected_components_per_relation(full_g)
+    print(counts)  # {'ss': 2, 'st': 1, 'tt': 3, 'pp': 6}
+
+    # Or get full analysis with printed output
+    results = transform.analyze_individual_connectivity(n_nodes=n_nodes)
+    print(results)
