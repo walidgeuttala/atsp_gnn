@@ -6,6 +6,12 @@ Key features:
 - Save best working model during Optuna process (overwrites previous best)
 - Memory management and OOM handling
 """
+import os
+os.environ.setdefault("TQDM_DISABLE", "1")
+os.environ.setdefault("TQDM_DISABLE_MONITOR", "1")
+os.environ.setdefault("PYTHONWARNINGS", "ignore")  # optional
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
 import itertools
 import importlib
 import logging
@@ -268,7 +274,7 @@ def run_optuna_search(args: Any, n_trials: int = 20, n_jobs: int = 1):
     
     # Generate search space
     relation_subsets = list(all_nonempty_subsets(list(args.relation_types)))
-    agg_methods = ["concat"]
+    agg_methods = ["attn"]
     
     logger.info(f"Starting search: {len(relation_subsets)} relation subsets × {len(agg_methods)} agg methods")
     logger.info(f"Each trial: Size 500 test -> Train on size 50 (if passed) -> Save if best")

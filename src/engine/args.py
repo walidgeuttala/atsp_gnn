@@ -17,7 +17,7 @@ def base_parser() -> argparse.ArgumentParser:
     parser.add_argument('--device', type=str, default='cpu', help='cuda or cpu')
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--n_trials', type=int, default=1)
-    parser.add_argument('--num_workers', type=int, default=8)
+    parser.add_argument('--num_workers', type=int, default=0)
 
     return parser
 
@@ -67,6 +67,15 @@ def train_test_parser() -> argparse.ArgumentParser:
                         help='Perturbation moves number for search-based tester')
     parser.add_argument('--perturbation_count', type=int, default=5,
                         help='Number of perturbations (older arg name mapping)')
+
+    # Large graph testing
+    parser.add_argument('--sub_size', type=int, default=None,
+                        help='Subgraph size for large-graph mode; if None or >= atsp_size, use full graph')
+    parser.add_argument('--cover_algo', type=str, default='greedy',
+                        choices=['greedy', 'bibd'],
+                        help='Algorithm to cover all edges with subgraphs')
+    parser.add_argument('--template_path', type=str, default=None,
+                        help='Path to dataset folder for template subgraph (e.g., ../saved_dataset/ATSP_30x250)')
 
     # Logging / extras
     parser.add_argument('--log_interval', type=int, default=50)
