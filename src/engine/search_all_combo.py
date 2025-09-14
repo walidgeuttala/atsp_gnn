@@ -6,12 +6,6 @@ Key features:
 - Save best working model during Optuna process (overwrites previous best)
 - Memory management and OOM handling
 """
-import os
-os.environ.setdefault("TQDM_DISABLE", "1")
-os.environ.setdefault("TQDM_DISABLE_MONITOR", "1")
-os.environ.setdefault("PYTHONWARNINGS", "ignore")  # optional
-os.environ.setdefault("OMP_NUM_THREADS", "1")
-os.environ.setdefault("MKL_NUM_THREADS", "1")
 import itertools
 import importlib
 import logging
@@ -24,9 +18,18 @@ import optuna
 import torch
 
 # Setup paths and logging
-sys.path.append(os.path.dirname(os.path.abspath(__file__)) + "/..")
+# Ensure Python can import both 'src.engine.*' (for relative imports inside modules)
+# and 'data.*'/'engine.*' (direct top-level convenience). Add project root and src/.
+_SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_PROJ_ROOT = os.path.abspath(os.path.join(_SRC_DIR, ".."))
+for _p in (_PROJ_ROOT, _SRC_DIR):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 from .args import parse_args
 from ..utils import fix_seed
+import json
+import multiprocessing as mp
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("search")
@@ -80,7 +83,9 @@ def test_size_500_compatibility(args: Any, relations: Tuple[str, ...], agg: str,
     test_args.relation_types = list(relations)
     test_args.agg = agg
     test_args.atsp_size = 500
-    test_args.data_path = '../saved_dataset/ATSP_30x500'
+    # Use absolute path to saved_dataset/ATSP_30x500 relative to project root
+    root_dir = Path(__file__).resolve().parents[2]
+    test_args.data_path = str(root_dir / 'saved_dataset' / 'ATSP_30x500')
     
     # Apply hyperparameters
     for k, v in params.items():
@@ -91,7 +96,8 @@ def test_size_500_compatibility(args: Any, relations: Tuple[str, ...], agg: str,
     try:
         clear_memory()
         
-        # Import modules
+        # Import modules as 'src.engine.*' and 'src.models.*' so that
+        # relative imports inside those modules (e.g., '..data.*') resolve.
         tester_mod = locate_module(f"src.engine.test_{framework}")
         models_mod = locate_module(f"src.models.models_{framework}")
         
@@ -142,7 +148,7 @@ def save_current_best_model(args: Any, relations: Tuple[str, ...], agg: str, par
     try:
         clear_memory()
         
-        # Import modules
+        # Import modules using 'src.' to satisfy relative imports inside trainers
         trainer_mod = locate_module(f"src.engine.train_{framework}")
         models_mod = locate_module(f"src.models.models_{framework}")
         
@@ -222,7 +228,7 @@ def create_objective_with_size_screening(args: Any, rel_subset: Tuple[str, ...],
         fix_seed(getattr(train_args, "seed", 0))
         
         try:
-            # Import training modules
+            # Import training modules using 'src.' to satisfy relative imports inside trainers
             trainer_mod = locate_module(f"src.engine.train_{framework}")
             models_mod = locate_module(f"src.models.models_{framework}")
             
@@ -233,6 +239,15 @@ def create_objective_with_size_screening(args: Any, rel_subset: Tuple[str, ...],
             if not TrainerClass or not get_model:
                 raise ImportError("Required classes not found")
             
+            # Ensure a valid training dataset directory
+            if not getattr(train_args, 'data_dir', None):
+                train_args.data_dir = str(Path(__file__).resolve().parents[2] / 'saved_dataset' / 'ATSP_3000x50')
+            else:
+                # If provided path looks invalid, fallback to default training set
+                data_dir_path = Path(train_args.data_dir)
+                if not data_dir_path.exists() or not (data_dir_path / 'train.txt').exists():
+                    train_args.data_dir = str(Path(__file__).resolve().parents[2] / 'saved_dataset' / 'ATSP_3000x50')
+
             # Train model on size 50
             model = get_model(train_args)
             trainer = TrainerClass(train_args, save_model=False)
@@ -267,93 +282,162 @@ def create_objective_with_size_screening(args: Any, rel_subset: Tuple[str, ...],
     
     return objective
 
-def run_optuna_search(args: Any, n_trials: int = 20, n_jobs: int = 1):
-    """Main search function with size pre-screening."""
-    output_dir = get_output_dir()
-    framework = args.framework.lower()
-    
-    # Generate search space
-    relation_subsets = list(all_nonempty_subsets(list(args.relation_types)))
-    agg_methods = ["attn"]
-    
-    logger.info(f"Starting search: {len(relation_subsets)} relation subsets × {len(agg_methods)} agg methods")
-    logger.info(f"Each trial: Size 500 test -> Train on size 50 (if passed) -> Save if best")
-    
-    search_results = []
-    saved_models = []
-    
-    # Search each combination
-    for rel_idx, rel_subset in enumerate(relation_subsets):
-        for agg_method in agg_methods:
-            combo_name = f"rel{rel_idx+1}_{agg_method}"
-            logger.info(f"\n=== Optimizing {combo_name}: {rel_subset} + {agg_method} ===")
-            
+def _run_one_subset_worker(args, rel_subset, agg_method, n_trials, framework, output_dir):
+    """
+    Runs a single Optuna study for one (rel_subset, agg_method) in an isolated process.
+    Writes result JSON to output_dir and returns nothing.
+    """
+    # per-process logging to file
+    combo_name = f"rel_{'_'.join(rel_subset)}_{agg_method}"
+    log_path = os.path.join(output_dir, f"{combo_name}.log")
+    fh = logging.FileHandler(log_path, mode="w")
+    fh.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+    logger_proc = logging.getLogger(f"search.{combo_name}")
+    logger_proc.setLevel(logging.INFO)
+    logger_proc.handlers = []
+    logger_proc.addHandler(fh)
+
+    try:
+        # Limit native threads per worker to reduce risk of crashes in MKL/OpenMP libs
+        os.environ.setdefault('OMP_NUM_THREADS', '1')
+        os.environ.setdefault('MKL_NUM_THREADS', '1')
+        os.environ.setdefault('OPENBLAS_NUM_THREADS', '1')
+        os.environ.setdefault('NUMEXPR_NUM_THREADS', '1')
+        import torch
+        try:
+            torch.set_num_threads(1)
+        except Exception:
+            pass
+        clear_memory()
+        study = optuna.create_study(direction="minimize")
+
+        objective = create_objective_with_size_screening(
+            args, rel_subset, agg_method, framework, output_dir
+        )
+
+        # very important: no thread-based parallelism in the worker
+        study.optimize(objective, n_trials=n_trials, n_jobs=1)
+
+        successful = [t for t in study.trials
+                      if t.state == optuna.trial.TrialState.COMPLETE and t.value != float('inf')]
+
+        if successful:
+            best_trial = min(successful, key=lambda t: t.value)
+            result = {
+                "combo_name": combo_name,
+                "relations": rel_subset,
+                "agg": agg_method,
+                "best_params": best_trial.params,
+                "best_val_loss": best_trial.value,
+                "total_trials": len(study.trials),
+                "successful_trials": len(successful)
+            }
+        else:
+            result = {
+                "combo_name": combo_name,
+                "relations": rel_subset,
+                "agg": agg_method,
+                "best_params": None,
+                "best_val_loss": float("inf"),
+                "total_trials": len(study.trials),
+                "successful_trials": 0
+            }
+
+        # write per-subset result
+        result_path = os.path.join(output_dir, f"result_{combo_name}.json")
+        with open(result_path, "w") as f:
+            json.dump(result, f, indent=2)
+
+        logger_proc.info(f"Finished {combo_name} with best={result['best_val_loss']:.6f}")
+    except Exception as e:
+        # write a failure marker so parent can proceed
+        fail_path = os.path.join(output_dir, f"result_{combo_name}.json")
+        with open(fail_path, "w") as f:
+            json.dump({"combo_name": combo_name, "error": str(e)}, f, indent=2)
+        logger_proc.exception(f"Subset {combo_name} failed: {e}")
+    finally:
+        try:
             clear_memory()
-            
-            # Run Optuna optimization with size pre-screening
-            study = optuna.create_study(direction="minimize")
-            objective = create_objective_with_size_screening(args, rel_subset, agg_method, 
-                                                           framework, output_dir)
-            
-            try:
-                study.optimize(objective, n_trials=n_trials, n_jobs=n_jobs)
-            except Exception as e:
-                logger.warning(f"Optuna failed for {combo_name}: {e}")
-                continue
-            
-            # Get best trial (only from trials that passed size 500 test)
-            successful_trials = [t for t in study.trials 
-                               if t.state == optuna.trial.TrialState.COMPLETE and t.value != float('inf')]
-            
-            if successful_trials:
-                best_trial = min(successful_trials, key=lambda t: t.value)
-                
-                result = {
-                    "combo_name": combo_name,
-                    "relations": rel_subset,
-                    "agg": agg_method,
-                    "best_params": best_trial.params,
-                    "best_val_loss": best_trial.value,
-                    "total_trials": len(study.trials),
-                    "successful_trials": len(successful_trials)
-                }
-                
-                search_results.append(result)
-                logger.info(f"Best {combo_name}: loss={best_trial.value:.6f} "
-                          f"({len(successful_trials)}/{len(study.trials)} trials passed size 500)")
-                
-                # Model should already be saved during optimization
-                model_name = f"best_model_rel_{hash(rel_subset)}_{agg_method}.pt"
-                model_path = os.path.join(output_dir, model_name)
-                if os.path.exists(model_path):
-                    saved_models.append(model_path)
+        except Exception:
+            pass
+
+
+def run_optuna_search(args: Any, n_trials: int = 20, n_jobs: int = 1):
+    """
+    Run a separate process for each relation-subset study.
+    Keeps your size-500 screening and per-subset best-model saving logic.
+    """
+    output_dir = get_output_dir()
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+    framework = args.framework.lower()
+
+    relation_subsets = list(all_nonempty_subsets(list(args.relation_types)))
+    agg_methods = ["sum"]  # you said only one agg type
+
+    logger.info(f"Starting search: {len(relation_subsets)} relation subsets × {len(agg_methods)} agg methods")
+    logger.info("Each trial: Size 500 test -> Train on size 50 if passed -> Save if best")
+
+    # ensure spawn start method
+    try:
+        mp.set_start_method("spawn", force=True)
+    except RuntimeError:
+        pass
+
+    results = []
+    saved_models = []  # your save_current_best_model still runs inside the worker
+
+    # run each subset in a fresh process
+    for rel_subset in relation_subsets:
+        for agg_method in agg_methods:
+            combo_name = f"rel_{'_'.join(rel_subset)}_{agg_method}"
+            logger.info(f"\n=== Optimizing {combo_name}: {rel_subset} + {agg_method} ===")
+
+            proc = mp.Process(
+                target=_run_one_subset_worker,
+                args=(args, rel_subset, agg_method, n_trials, framework, output_dir),
+                daemon=False
+            )
+            proc.start()
+            proc.join()  # sequential for maximum stability
+
+            # read back result JSON
+            result_path = os.path.join(output_dir, f"result_{combo_name}.json")
+            if os.path.exists(result_path):
+                with open(result_path, "r") as f:
+                    r = json.load(f)
+                if "error" in r:
+                    logger.warning(f"Subset {combo_name} failed: {r['error']}")
+                else:
+                    results.append(r)
+                    logger.info(f"Best {combo_name}: loss={r['best_val_loss']:.6f} "
+                                f"({r['successful_trials']}/{r['total_trials']} trials passed size 500)")
             else:
-                logger.warning(f"No successful trials for {combo_name} (all failed size 500 test)")
-    
-    # Write summary
+                logger.warning(f"No result file for {combo_name}")
+
+            # light cleanup after each child
+            clear_memory()
+
+    # write summary
     summary_file = os.path.join(output_dir, "search_summary.txt")
     with open(summary_file, "w") as f:
-        f.write(f"ATSP Hyperparameter Search Results\n")
-        f.write(f"="*50 + "\n")
-        f.write(f"Search strategy: Size 500 pre-screening + Size 50 training\n")
+        f.write("ATSP Hyperparameter Search Results\n")
+        f.write("=" * 50 + "\n")
+        f.write("Search strategy: Size 500 pre-screening + Size 50 training\n")
         f.write(f"Total combinations: {len(relation_subsets) * len(agg_methods)}\n")
-        f.write(f"Successful combinations: {len(search_results)}\n")
-        f.write(f"Models saved: {len(saved_models)}\n\n")
-        
+        f.write(f"Successful combinations: {sum(1 for r in results if r['successful_trials'] > 0)}\n\n")
         f.write("Results by combination:\n")
-        for result in search_results:
-            f.write(f"  {result['combo_name']}: loss={result['best_val_loss']:.6f}\n")
-            f.write(f"    Relations: {result['relations']}\n")
-            f.write(f"    Agg: {result['agg']}\n")
-            f.write(f"    Best params: {result['best_params']}\n")
-            f.write(f"    Trials: {result['successful_trials']}/{result['total_trials']} passed size 500\n\n")
-    
-    logger.info(f"\nSEARCH COMPLETED!")
+        for r in results:
+            f.write(f"  {r['combo_name']}: loss={r['best_val_loss']:.6f}\n")
+            f.write(f"    Relations: {tuple(r['relations'])}\n")
+            f.write(f"    Agg: {r['agg']}\n")
+            f.write(f"    Best params: {r['best_params']}\n")
+            f.write(f"    Trials: {r['successful_trials']}/{r['total_trials']} passed size 500\n\n")
+
+    logger.info("\nSEARCH COMPLETED!")
     logger.info(f"Output: {output_dir}")
-    logger.info(f"Working combinations: {len(search_results)}")
-    logger.info(f"Saved models: {len(saved_models)}")
-    
-    return search_results, saved_models
+    logger.info(f"Working combinations: {sum(1 for r in results if r['successful_trials'] > 0)}")
+
+    return results, saved_models
 
 if __name__ == "__main__":
     args = parse_args()
