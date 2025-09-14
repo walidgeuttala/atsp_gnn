@@ -166,7 +166,7 @@ def main():
     parser.add_argument('--n_val', type=int, default=100)
     parser.add_argument('--n_test', type=int, default=100)
     parser.add_argument('--atsp_size', type=int, default=10)
-    parser.add_argument('--relation_types', nargs='+', default=['ss'])
+    parser.add_argument('--relation_types', nargs='+', default=['pp'])
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--save_pyg', action='store_true')
 

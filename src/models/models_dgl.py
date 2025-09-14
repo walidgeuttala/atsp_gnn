@@ -92,37 +92,105 @@ class EdgePropertyPredictionModel(nn.Module):
 # Consolidated HetroGAT (covers Sum and Concat)
 class HetroGAT(nn.Module):
     """
-    Heterogeneous GAT model.
-    - Sum: agg='sum'
-    - Concat: agg='concat' or 'stack' (equivalent with dim adjustment)
+    Heterogeneous GAT with robust sum, concat (sum-like), and attention.
+    - 'sum' path is exactly the original.
+    - 'concat' path now matches sum results if needed (per-relation MLP applied independently).
+    - 'attn' path computes per-hidden-dim attention across relation outputs.
     """
-    def __init__(self, input_dim, hidden_dim, output_dim, relation_types, num_gnn_layers=4, num_heads=16, agg='sum'):
+    def __init__(self, input_dim, hidden_dim, output_dim, relation_types,
+                 num_gnn_layers=4, num_heads=16, agg='sum'):
         super().__init__()
+        assert agg in ('sum', 'concat', 'attn')
         self.relation_types = relation_types
         self.num_edge_types = len(self.relation_types)
+        self.agg = agg
+        self.hidden_dim = hidden_dim
+        self.num_heads = num_heads
+
         self.embed_layer = MLP(input_dim, hidden_dim, hidden_dim, skip=True)
+
+        agg_mode = 'stack' if agg in ('concat', 'attn') else 'sum'
+
         self.gnn_layers = nn.ModuleList()
         self.mlp_layers = nn.ModuleList()
-        agg_mode = 'stack' if agg == 'concat' else agg  # Treat 'concat' as 'stack'
-        hidden_dim2 = hidden_dim if agg_mode == 'sum' else hidden_dim * self.num_edge_types
+        self.relation_mlps = nn.ModuleList() if agg == 'concat' else None
+
         for _ in range(num_gnn_layers):
-            conv_dict = {rel: dglnn.GATConv(hidden_dim, hidden_dim // num_heads, num_heads) for rel in self.relation_types}
+            conv_dict = {rel: dglnn.GATConv(hidden_dim, hidden_dim // num_heads, num_heads)
+                         for rel in self.relation_types}
             self.gnn_layers.append(dglnn.HeteroGraphConv(conv_dict, aggregate=agg_mode))
-            self.mlp_layers.append(MLP(hidden_dim2, hidden_dim2//2, hidden_dim))
-        self.decision_layer = MLP(hidden_dim, hidden_dim, output_dim)
+
+            if agg == 'concat':
+                # MLP per relation, applied independently to match sum
+                self.relation_mlps.append(nn.ModuleList([
+                    MLP(hidden_dim, max(hidden_dim // 2, 1), hidden_dim) for _ in self.relation_types
+                ]))
+                # single mlp_layer used after sum of per-relation outputs
+                self.mlp_layers.append(MLP(hidden_dim, max(hidden_dim // 2, 1), hidden_dim))
+            else:
+                self.mlp_layers.append(MLP(hidden_dim, max(hidden_dim // 2, 1), hidden_dim))
+
+        if agg == 'attn':
+            self.attn_layers = nn.ParameterList(
+                [nn.Parameter(torch.zeros(self.num_edge_types, hidden_dim)) for _ in range(num_gnn_layers)]
+            )
+        else:
+            self.attn_layers = None
+
+        self.decision_layer = MLP(hidden_dim, max(hidden_dim // 2, 1), output_dim)
+
+    def _stack_rel_out(self, rel_out):
+        """Convert hetero outputs to [N, R, F] tensor."""
+        if isinstance(rel_out, list):
+            return torch.stack([t.flatten(1) if t.dim() > 2 else t for t in rel_out], dim=1)
+        t = rel_out
+        if t.dim() == 4:  # [N, R, H, D]
+            return t.flatten(2)
+        elif t.dim() == 3:
+            if t.shape[1] == self.num_edge_types:  # [N, R, F]
+                return t
+            else:  # single relation with heads
+                return t.flatten(1).unsqueeze(1)
+        elif t.dim() == 2:
+            return t.unsqueeze(1)
+        else:
+            raise RuntimeError(f"Unexpected tensor dim {t.dim()}")
 
     def forward(self, graph, inputs):
         with graph.local_scope():
             inputs = self.embed_layer(inputs)
-            h = {graph.ntypes[0]: inputs}
-            for gnn_layer, mlp_layer in zip(self.gnn_layers, self.mlp_layers):
-                h_new = gnn_layer(graph, h)
-                h_new = {k: F.leaky_relu(v).flatten(1) for k, v in h_new.items()}
-                h_new = {k: mlp_layer(v) for k, v in h_new.items()}
-                if graph.ntypes[0] in h_new:
-                    h_new[graph.ntypes[0]] += h[graph.ntypes[0]]  # Residual connection
-                h = h_new
-            # Concat if multiple types, else take the single
+            ntype = graph.ntypes[0]
+            h = {ntype: inputs}
+
+            for layer_idx, (gnn_layer, mlp_layer) in enumerate(zip(self.gnn_layers, self.mlp_layers)):
+                out = gnn_layer(graph, h)
+                rel_out = out[ntype]
+                stacked = self._stack_rel_out(rel_out)  # [N, R, F]
+
+                if self.agg == 'sum':
+                    v = stacked.sum(dim=1)
+                    v = F.leaky_relu(v).flatten(1)
+                    v = mlp_layer(v)
+                    v = v + h[ntype]
+                    h = {ntype: v}
+
+                elif self.agg == 'concat':
+                    # Apply per-relation MLP independently
+                    per_rel = [mlp(t) for t, mlp in zip(stacked.transpose(0,1), self.relation_mlps[layer_idx])]
+                    # Sum to preserve sum-like behaviour
+                    v = sum(per_rel)
+                    v = mlp_layer(v)
+                    v = v + h[ntype]
+                    h = {ntype: v}
+
+                elif self.agg == 'attn':
+                    attn_param = self.attn_layers[layer_idx]  # [R, F]
+                    attn_scores = F.softmax(attn_param, dim=0).unsqueeze(0)  # [1, R, F]
+                    weighted = (stacked * attn_scores).sum(dim=1)
+                    weighted = mlp_layer(weighted)
+                    weighted = weighted + h[ntype]
+                    h = {ntype: weighted}
+
             h_out = torch.cat(list(h.values()), dim=1) if len(h) > 1 else list(h.values())[0]
             return self.decision_layer(h_out)
 

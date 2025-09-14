@@ -31,6 +31,14 @@ class ATSPTesterDGL:
             load_once=False
         )
     
+    def test_instance_fast(self, model, test_dataset, instance_idx: int):
+        H, _ = test_dataset[instance_idx]
+        x = H.ndata['weight']
+        with torch.no_grad():
+            y_pred = model(H, x)
+        del H, x, y_pred
+        torch.cuda.empty_cache()
+        
     def test_instance(self, model, test_dataset, instance_idx: int) -> Dict[str, Any]:
         """Test single instance with GLS."""
         # Load original NetworkX graph
@@ -46,7 +54,7 @@ class ATSPTesterDGL:
         model_time = time.time() - start_time
         # Inverse transform predictions
         regret_pred = test_dataset.scalers.inverse_transform(
-            y_pred.cpu().numpy().flatten(), 'regret'
+            y_pred.cpu().flatten(), 'regret'
         )
         
         # Add predictions to graph

@@ -10,10 +10,12 @@ from ..data.dataset_dgl import ATSPDatasetDGL
 class ATSPTrainerDGL:
     """Training manager for DGL-based ATSP models."""
     
-    def __init__(self, args):
+    def __init__(self, args, save_model=False):
         self.args = args
+        self.save_model = save_model
         self.device = torch.device('cuda' if args.device == 'cuda' and torch.cuda.is_available() else 'cpu')
-        self.setup_directories()
+        if self.save_model:
+            self.setup_directories()
     
     def setup_directories(self):
         """Setup logging and checkpoint directories."""
@@ -104,9 +106,9 @@ class ATSPTrainerDGL:
         optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr_init)
         scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, self.args.lr_decay)
         criterion = torch.nn.MSELoss(reduction='sum')
-        
-        trial_dir = f'{self.log_dir}/trial_{trial_id}'
-        os.makedirs(trial_dir, exist_ok=True)
+        if self.save_model:
+            trial_dir = f'{self.log_dir}/trial_{trial_id}'
+            os.makedirs(trial_dir, exist_ok=True)
         
         # Results tracking
         results = {
@@ -138,8 +140,9 @@ class ATSPTrainerDGL:
                 results['best_val_loss'] = val_loss
                 results['best_epoch'] = epoch
                 results['patience_counter'] = 0
-                self.save_checkpoint(model, optimizer, epoch, train_loss, val_loss, 
-                                   f'{trial_dir}/best_model.pt')
+                if self.save_model:
+                    self.save_checkpoint(model, optimizer, epoch, train_loss, val_loss, 
+                                       f'{trial_dir}/best_model.pt')
             else:
                 results['patience_counter'] += 1
             
@@ -149,9 +152,10 @@ class ATSPTrainerDGL:
             
             scheduler.step()
         
-        # Save final results
-        with open(f'{trial_dir}/results.json', 'w') as f:
-            json.dump({k: v for k, v in results.items() if k != 'patience_counter'}, f, indent=2)
+        if self.save_model:
+            # Save final results
+            with open(f'{trial_dir}/results.json', 'w') as f:
+                json.dump({k: v for k, v in results.items() if k != 'patience_counter'}, f, indent=2)
         
         return results
     
