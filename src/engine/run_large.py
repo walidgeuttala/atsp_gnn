@@ -72,7 +72,11 @@ def main():
         model = get_model(args)
 
         results = tester.run_test(model)
-        print(f"Testing completed. Results saved to {args.model_path}/test_atsp{args.atsp_size}/results.json")
+        # Derive results directory next to checkpoint if model_path is a file
+        base_dir = args.model_path
+        if isinstance(base_dir, str) and base_dir.endswith('.pt'):
+            base_dir = os.path.dirname(base_dir)
+        print(f"Testing completed. Results saved to {base_dir}/test_atsp{args.atsp_size}/results.json")
 
     else:
         raise ValueError(f'Unknown mode: {mode}')

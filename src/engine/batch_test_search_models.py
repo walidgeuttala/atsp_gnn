@@ -71,11 +71,11 @@ class EvalConfig:
     search_root: Path
     sizes: Tuple[int, ...] = (100, 150, 250, 500)
     device: str = 'cuda'
-    time_limit: float = 5.0
+    time_limit: float = 5.0/30.0
     perturbation_moves: int = 30
     only_dirs: Optional[List[str]] = None  # e.g., ['12201357']
     limit_models: Optional[int] = None
-    framework: str = 'auto'  # 'auto' | 'dgl' | 'pyg'
+    framework: str = 'dgl'  # 'auto' | 'dgl' | 'pyg'
 
 
 def discover_checkpoints(root: Path, only_dirs: Optional[List[str]] = None) -> List[Path]:
@@ -209,6 +209,8 @@ def evaluate_model_dgl(
         'avg_cnt_search': [],
         'total_model_time': 0.0,
         'total_gls_time': 0.0,
+        'model_times': [],
+        'gls_times': [],
         'num_nodes': size,
         'instances': [],
     }
@@ -218,11 +220,17 @@ def evaluate_model_dgl(
         # Load graph and build scaled features
         H, G = test_dataset[idx]
         x = H.ndata['weight']
-        # Predict regrets
+        # warmup model
+        if idx == 0:
+            with torch.no_grad():
+                _ = model(H, x)
+        # Predict regrets with timing
+        t0 = time.time()
         with torch.no_grad():
             y_pred = model(H, x)
-        model_time = 0.0  # optional timing; can be extended if needed
+        model_time = time.time() - t0
         results['total_model_time'] += model_time
+        results['model_times'].append(float(model_time))
 
         regret_pred_vec = test_dataset.scalers.inverse_transform(
             y_pred.detach().cpu().flatten(), 'regret'
@@ -241,14 +249,16 @@ def evaluate_model_dgl(
         # Initial tour by predicted regret
         init_tour = nearest_neighbor(G, start=0, weight='regret_pred')
         init_cost = tour_cost(G, init_tour)
-        # GLS
+        # GLS with timing
+        t_g0 = time.time()
         best_tour, best_cost, search_progress, cnt_iters = guided_local_search(
             G, init_tour, init_cost, t_lim=time.time() + float(time_limit),
             weight='weight', guides=['regret_pred'],
             perturbation_moves=perturbation_moves, first_improvement=False
         )
-        gls_time = 0.0
+        gls_time = time.time() - t_g0
         results['total_gls_time'] += gls_time
+        results['gls_times'].append(float(gls_time))
 
         opt_cost = optimal_cost(G, weight='weight')
         init_gap = (init_cost / opt_cost - 1) * 100.0
@@ -328,7 +338,7 @@ def main():
     parser.add_argument('--search_root', type=str, default=str(Path(__file__).resolve().parents[2] / 'jobs' / 'search'))
     parser.add_argument('--sizes', type=int, nargs='+', default=[100, 150, 250, 500])
     parser.add_argument('--device', type=str, default='cuda')
-    parser.add_argument('--time_limit', type=float, default=5.0)
+    parser.add_argument('--time_limit', type=float, default=5.0/30.0)
     parser.add_argument('--perturbation_moves', type=int, default=30)
     parser.add_argument('--only_dirs', type=str, nargs='*', default=None)
     parser.add_argument('--limit_models', type=int, default=None)

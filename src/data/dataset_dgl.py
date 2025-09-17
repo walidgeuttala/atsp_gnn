@@ -51,10 +51,23 @@ class ATSPDatasetDGL:
             self.graphs = None  # lazy loading mode
 
     def _load_instance_list(self) -> List[str]:
-        """Load instance filenames for this split."""
-        split_file = self.data_dir / f"{self.split}.txt"
-        with open(split_file, 'r') as f:
-            return [line.strip() for line in f.readlines()]
+        """Load instance filenames for this split.
+        
+        If split == 'all', merge train.txt, valid.txt, and test.txt.
+        """
+        if self.split == "all":
+            files = ["train.txt", "val.txt", "test.txt"]
+            instances = []
+            for fname in files:
+                split_file = self.data_dir / fname
+                if split_file.exists():
+                    with open(split_file, "r") as f:
+                        instances.extend([line.strip() for line in f])
+            return instances
+        else:
+            split_file = self.data_dir / f"{self.split}.txt"
+            with open(split_file, "r") as f:
+                return [line.strip() for line in f]
     
     def _load_template(self) -> dgl.DGLGraph:
         template_path = TemplateManager.get_template_path(

@@ -225,35 +225,45 @@ def optimal_cost(G, weight='weight'):
     return c
 
 
-def get_adj_matrix_string(G):
-    """
-    Generate TSPLIB-style string from graph adjacency.
-    
+def get_adj_matrix_string(G, weight: str = 'weight', scale: float = None):
+    """Generate a TSPLIB ATSP string with the graph's edge weights.
+
+    - Extracts the full NxN weight matrix from edge attribute `weight`.
+    - Scales to integers (TSPLIB requirement) using `scale` if provided, else auto-scale.
+
     Args:
-        G (nx.Graph): The graph.
-    
+        G (nx.DiGraph): The graph.
+        weight (str): Edge attribute name for weights.
+        scale (float, optional): Multiply weights by this factor before rounding to int.
+
     Returns:
-        str: TSPLIB string.
+        str: TSPLIB-formatted string with FULL_MATRIX.
     """
-    # Get the lower triangular adjacency matrix with diagonal
-    adj_matrix = nx.to_numpy_array(G).astype(int)
-    n = adj_matrix.shape[0]
-    ans = f'''NAME: TSP
-    COMMENT: 64-city problem
-    TYPE: ATSP
-    DIMENSION: {n}
-    EDGE_WEIGHT_TYPE: EXPLICIT
-    EDGE_WEIGHT_FORMAT: FULL_MATRIX
-    EDGE_WEIGHT_SECTION: 
-    '''
+    W = nx.to_numpy_array(G, weight=weight)
+    n = W.shape[0]
+
+    if scale is None:
+        # Auto-scale floats to preserve up to 6 decimals
+        # If all entries are integers already, scale=1.
+        if np.issubdtype(W.dtype, np.floating):
+            scale = 1e6
+        else:
+            scale = 1.0
+    M = np.rint(W * scale).astype(int)
+
+    ans = (
+        f"NAME: ATSP_{n}\n"
+        f"COMMENT: Generated from networkx with attribute '{weight}'\n"
+        f"TYPE: ATSP\n"
+        f"DIMENSION: {n}\n"
+        f"EDGE_WEIGHT_TYPE: EXPLICIT\n"
+        f"EDGE_WEIGHT_FORMAT: FULL_MATRIX\n"
+        f"EDGE_WEIGHT_SECTION:\n"
+    )
+
     for i in range(n):
-        # Iterate over columns up to the diagonal
-        for j in range(n):
-            ans += str(adj_matrix[i][j]) + " "
-        ans += "\n"
-    # Add EOF
-    # adj_matrix_string += "EOF"
-    
+        ans += " ".join(str(M[i, j]) for j in range(n)) + "\n"
+
     return ans.strip()
 
 
@@ -269,7 +279,7 @@ def fixed_edge_tour(G, e, lkh_path='../LKH-3.0.9/LKH'):
     Returns:
         list: The tour.
     """
-    string = get_adj_matrix_string(G)
+    string = get_adj_matrix_string(G, weight='weight')
     problem = tsplib95.loaders.parse(string)
     problem.fixed_edges = [[n + 1 for n in e]]
 

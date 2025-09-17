@@ -48,7 +48,7 @@ def train_test_parser() -> argparse.ArgumentParser:
     parser.add_argument('--num_heads', type=int, default=2)
     parser.add_argument('--jk', type=str, default=None, choices=[None, 'cat'])
     parser.add_argument('--skip_connection', action='store_true')
-    parser.add_argument('--agg', type=str, default='sum', choices=['sum', 'concat', 'attn'])
+    parser.add_argument('--agg', type=str, default='concat', choices=['sum', 'concat', 'attn'])
 
     # Training hyperparams
     parser.add_argument('--batch_size', type=int, default=32)
@@ -76,6 +76,12 @@ def train_test_parser() -> argparse.ArgumentParser:
                         help='Algorithm to cover all edges with subgraphs')
     parser.add_argument('--template_path', type=str, default=None,
                         help='Path to dataset folder for template subgraph (e.g., ../saved_dataset/ATSP_30x250)')
+    parser.add_argument('--limit_instances', type=int, default=None,
+                        help='Limit number of test instances to run (for large graphs)')
+    parser.add_argument('--lkh_runs', type=int, default=0,
+                        help='If >0, use LKH to refine final tour with given number of runs')
+    parser.add_argument('--lkh_time_limit', type=float, default=0.0,
+                        help='Optional TIME_LIMIT (seconds) for LKH when refining')
 
     # Logging / extras
     parser.add_argument('--log_interval', type=int, default=50)

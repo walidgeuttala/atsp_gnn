@@ -164,6 +164,40 @@ class ATSPDatasetDGL(BaseATSPDataset):
             self.template_small = None
             self.graphs = None
 
+    def _cover_complete_by_block_pairs(self, n: int, sub_size: int) -> List[List[int]]:
+        """Fast pair-cover for complete graphs using union of half-size blocks.
+
+        - Partition nodes into disjoint blocks of size b=sub_size//2 (last may be smaller).
+        - For every unordered pair of blocks (i<j), form subset = blocks[i] ∪ blocks[j].
+        - If subset has fewer than sub_size nodes (due to final short block), fill by
+          appending nodes from subsequent blocks (wrapping) until reaching sub_size.
+
+        Returns an ordered list of node lists (length == sub_size each).
+        """
+        b = max(2, sub_size // 2)
+        blocks: List[List[int]] = []
+        for start in range(0, n, b):
+            end = min(n, start + b)
+            blocks.append(list(range(start, end)))
+        subsets: List[List[int]] = []
+        B = len(blocks)
+        for i in range(B):
+            for j in range(i + 1, B):
+                union_nodes = list(blocks[i]) + [v for v in blocks[j] if v not in blocks[i]]
+                if len(union_nodes) < sub_size:
+                    k = (j + 1) % B
+                    while len(union_nodes) < sub_size and B > 0:
+                        for v in blocks[k]:
+                            if v not in union_nodes:
+                                union_nodes.append(v)
+                                if len(union_nodes) == sub_size:
+                                    break
+                        k = (k + 1) % B
+                        if k == i:
+                            break
+                subsets.append(union_nodes[:sub_size])
+        return subsets
+
     def _load_template(self, full_size: int) -> dgl.DGLGraph:
         # prefer sub template dir for sub_size, and data dir for full size
         candidate_dirs = (
@@ -256,23 +290,38 @@ class ATSPDatasetDGL(BaseATSPDataset):
                     edge_idx += 1
             return
 
-        # Build covering subsets
-        subsets = self.greedy_cover_subsets(n, sub_size)
+        # Build covering subsets. For complete graphs, use fast block-pair cover.
+        if len(G.edges) == n * (n - 1) and (sub_size % 2 == 0):
+            subset_orders = self._cover_complete_by_block_pairs(n, sub_size)
+        else:
+            subset_orders = [sorted(list(s)) for s in self.greedy_cover_subsets(n, sub_size)]
+
+        # Verify directed-pair coverage (diagnostic, cheap)
+        cov_counts = np.zeros((n, n), dtype=np.int32)
+        for node_order in subset_orders:
+            s = len(node_order)
+            for i in range(s):
+                for j in range(s):
+                    if i == j:
+                        continue
+                    u, v = node_order[i], node_order[j]
+                    cov_counts[u, v] += 1
+        uncovered = np.argwhere((cov_counts == 0) & (~np.eye(n, dtype=bool)))
+        if uncovered.size > 0:
+            # raise explicit error to avoid silent bad merges
+            raise RuntimeError(f"Coverage incomplete: found {uncovered.shape[0]} uncovered directed pairs out of {n*(n-1)}")
 
         # Ensure we have a small template loaded
         template_small = self.template_small or self._load_template(sub_size)
 
-        # Prepare storage for aggregated predictions and counts
-        pred_accum = {(i, j): 0.0 for i in range(n) for j in range(n) if i != j}
-        pred_count = {(i, j): 0 for i in range(n) for j in range(n) if i != j}
+        # Prepare storage for aggregated predictions and counts (dense arrays for speed/memory)
+        pred_accum = np.zeros((n, n), dtype=np.float32)
+        pred_count = np.zeros((n, n), dtype=np.int32)
 
         # Process subsets in batches
         batch_graphs = []
         batch_node_orders = []
-        batch_meta = []
-
-        for subset in subsets:
-            node_order = sorted(list(subset))
+        for node_order in subset_orders:
             subG = self.induced_subgraph(G, node_order)
             weights, regrets, in_solution = self._extract_features_from_graph(subG, node_order)
             g = template_small.clone()
@@ -281,30 +330,27 @@ class ATSPDatasetDGL(BaseATSPDataset):
             g.ndata['in_solution'] = in_solution.unsqueeze(1).to(self.device)
             batch_graphs.append(g)
             batch_node_orders.append(node_order)
-            batch_meta.append(subG)
 
             if len(batch_graphs) >= batch_size:
                 self._run_batch_and_merge(model, batch_graphs, batch_node_orders, pred_accum, pred_count)
                 batch_graphs = []
                 batch_node_orders = []
-                batch_meta = []
 
         if batch_graphs:
             self._run_batch_and_merge(model, batch_graphs, batch_node_orders, pred_accum, pred_count)
 
         # Write averaged predictions into G
-        for (i, j), val in pred_accum.items():
-            count = pred_count[(i, j)]
-            if count > 0:
-                G.edges[(i, j)]['regret_pred'] = float(val / count)
-            else:
-                # fallback
-                if 'regret' in G.edges[(i, j)]:
-                    G.edges[(i, j)]['regret_pred'] = float(G.edges[(i, j)]['regret'])
+        for i in range(n):
+            for j in range(n):
+                if i == j:
+                    continue
+                c = pred_count[i, j]
+                if c > 0:
+                    G.edges[(i, j)]['regret_pred'] = float(pred_accum[i, j] / c)
                 else:
-                    G.edges[(i, j)]['regret_pred'] = 0.0
+                    G.edges[(i, j)]['regret_pred'] = float(G.edges[(i, j)].get('regret', 0.0))
 
-    def _run_batch_and_merge(self, model, batch_graphs: List[dgl.DGLGraph], batch_node_orders: List[List[int]], pred_accum: dict, pred_count: dict):
+    def _run_batch_and_merge(self, model, batch_graphs: List[dgl.DGLGraph], batch_node_orders: List[List[int]], pred_accum: np.ndarray, pred_count: np.ndarray):
         batch = dgl.batch(batch_graphs)
         x = batch.ndata['weight']
         with torch.no_grad():
@@ -328,8 +374,8 @@ class ATSPDatasetDGL(BaseATSPDataset):
                     u = node_order[i]
                     v = node_order[j]
                     val = float(max(y_sub_inv[edge_idx], 0.0))
-                    pred_accum[(u, v)] += val
-                    pred_count[(u, v)] += 1
+                    pred_accum[u, v] += val
+                    pred_count[u, v] += 1
                     edge_idx += 1
 
     def get_scaled_features(self, G: nx.DiGraph) -> dgl.DGLGraph:
