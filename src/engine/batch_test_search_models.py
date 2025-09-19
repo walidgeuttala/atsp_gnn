@@ -33,6 +33,12 @@ import numpy as np
 import torch
 import tqdm
 
+try:
+    from torch.profiler import profile, ProfilerActivity
+except ImportError:  # Older torch versions
+    profile = None
+    ProfilerActivity = None
+
 # Ensure both project root and src/ are on sys.path so that modules that import
 # 'data.*' or 'utils.*' (absolute from src root) resolve correctly, matching
 # search_all_combo.py behavior.
@@ -76,6 +82,9 @@ class EvalConfig:
     only_dirs: Optional[List[str]] = None  # e.g., ['12201357']
     limit_models: Optional[int] = None
     framework: str = 'dgl'  # 'auto' | 'dgl' | 'pyg'
+    profile_flops: bool = True
+    reuse_predictions: bool = False
+    override_sizes: Optional[Tuple[int, ...]] = None
 
 
 def discover_checkpoints(root: Path, only_dirs: Optional[List[str]] = None) -> List[Path]:
@@ -129,6 +138,208 @@ def ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
 
+def result_json_path(ckpt_path: Path, size: int) -> Path:
+    """Return the expected summary JSON path for a checkpoint/size pair."""
+    model_dir = ckpt_path.parent
+    ckpt_stem = ckpt_path.stem.replace(os.sep, '_')
+    return model_dir / ckpt_stem / f"test_atsp{size}" / "results.json"
+
+
+def extract_model_metadata(base_args: Dict) -> Dict:
+    return {
+        'hidden_dim': base_args.get('hidden_dim'),
+        'num_heads': base_args.get('num_heads'),
+        'num_gnn_layers': base_args.get('num_gnn_layers') or base_args.get('num_layers'),
+    }
+
+
+def compute_model_param_count(
+    ckpt_path: Path,
+    base_args: Dict,
+    fallback_size: int,
+) -> Optional[int]:
+    try:
+        size = int(base_args.get('atsp_size', fallback_size))
+    except Exception:
+        size = fallback_size
+    try:
+        meta_device = torch.device('cpu')
+        args = build_eval_args(base_args, size=size, device=meta_device, model_path=str(ckpt_path))
+        model = get_dgl_model(args)
+        count = int(sum(p.numel() for p in model.parameters() if p.requires_grad))
+        del model
+        return count
+    except Exception as exc:
+        print(f"Failed to compute param count for {ckpt_path}: {exc}")
+        return None
+
+
+def measure_forward_flops(
+    model,
+    graph,
+    features,
+    device: torch.device,
+    enabled: bool,
+) -> Optional[float]:
+    if not enabled:
+        return None
+    if profile is None or ProfilerActivity is None:
+        return None
+    activities = [ProfilerActivity.CPU]
+    if device.type == 'cuda' and torch.cuda.is_available():
+        activities.append(ProfilerActivity.CUDA)
+    try:
+        with profile(activities=activities, record_shapes=False, with_flops=True) as prof:
+            with torch.no_grad():
+                model(graph, features)
+        total_flops = 0.0
+        for evt in prof.key_averages():
+            flops = getattr(evt, 'flops', None)
+            if flops is not None:
+                total_flops += flops
+        return float(total_flops) if total_flops > 0 else None
+    except Exception as exc:
+        print(f"FLOP profiling failed: {exc}")
+        return None
+
+
+def refresh_flops_for_size(
+    ckpt_path: Path,
+    base_args: Dict,
+    size: int,
+    project_root: Path,
+    enabled: bool,
+) -> Tuple[Optional[float], Optional[float]]:
+    if not enabled:
+        return None, None
+    if profile is None or ProfilerActivity is None:
+        return None, None
+
+    data_dir = dataset_path_for_size(project_root, size)
+    if not data_dir.exists():
+        return None, None
+
+    eval_device = torch.device('cpu')
+    model = None
+    try:
+        args = build_eval_args(base_args, size=size, device=eval_device, model_path=str(ckpt_path))
+        model = get_dgl_model(args)
+        model.eval()
+
+        dataset = ATSPDatasetDGL(
+            data_dir=data_dir,
+            split='test',
+            atsp_size=size,
+            relation_types=tuple(args.relation_types),
+            undirected=args.undirected,
+            device=eval_device,
+            load_once=False,
+        )
+
+        if len(dataset) == 0:
+            return None, None
+
+        H_sample, _ = dataset[0]
+        flops_forward = measure_forward_flops(
+            model,
+            H_sample,
+            H_sample.ndata['weight'],
+            eval_device,
+            enabled=True,
+        )
+        if flops_forward is None:
+            return None, None
+        total_flops = float(flops_forward * len(dataset))
+        return float(flops_forward), total_flops
+    except Exception as exc:
+        print(f"Failed to refresh FLOPs for {ckpt_path} size {size}: {exc}")
+        return None, None
+    finally:
+        if model is not None:
+            del model
+def build_summary_row(
+    ckpt: Path,
+    relations,
+    agg: str,
+    framework: str,
+    model_name: str,
+    size: int,
+    results: Dict,
+    metadata: Dict,
+) -> Dict:
+    param_count = results.get('model_param_count')
+    if param_count is None:
+        param_count = metadata.get('model_param_count')
+    hidden_dim = results.get('hidden_dim', metadata.get('hidden_dim'))
+    num_heads = results.get('num_heads', metadata.get('num_heads'))
+    num_layers = results.get('num_gnn_layers', metadata.get('num_gnn_layers'))
+    flops_forward = results.get('flops_per_forward')
+    flops_total = results.get('estimated_total_flops')
+    return {
+        'slurm_dir': ckpt.parent.name,
+        'model_file': ckpt.name,
+        'relations': '_'.join(relations) if isinstance(relations, (list, tuple)) else relations,
+        'agg': agg,
+        'framework': framework,
+        'model': model_name,
+        'atsp_size': size,
+        'avg_init_gap': results.get('avg_init_gaps'),
+        'avg_final_gap': results.get('avg_final_gaps'),
+        'avg_init_cost': results.get('avg_init_costs'),
+        'avg_final_cost': results.get('avg_final_costs'),
+        'avg_opt_cost': results.get('avg_opt_costs'),
+        'total_model_time': results.get('total_model_time'),
+        'total_gls_time': results.get('total_gls_time'),
+        'model_param_count': param_count,
+        'hidden_dim': hidden_dim,
+        'num_heads': num_heads,
+        'num_gnn_layers': num_layers,
+        'flops_per_forward': flops_forward,
+        'estimated_total_flops': flops_total,
+    }
+
+
+# Predefined total GLS budgets (seconds) per ATSP size.
+_TOTAL_GLS_TIME_BY_SIZE = {
+    100: 2.5,
+    150: 3.5,
+    250: 5.0,
+    500: 7.0,
+}
+
+
+def load_saved_regret_pred_matrix(
+    base_out_dir: Path,
+    size: int,
+    instance_name: str,
+) -> Tuple[Optional[np.ndarray], Path]:
+    safe_name = str(instance_name).replace(os.sep, '_')
+    path = base_out_dir / "trial_0" / f"test_atsp{size}" / f"instance{safe_name}.txt"
+    if not path.exists():
+        return None, path
+
+    matrix: List[List[float]] = []
+    capture = False
+    with open(path, 'r') as f:
+        for line in f:
+            stripped = line.strip()
+            if stripped.startswith('regret_pred:'):
+                capture = True
+                matrix = []
+                continue
+            if capture:
+                if not stripped:
+                    break
+                row = [float(x) for x in stripped.split()]
+                matrix.append(row)
+    if not matrix:
+        return None, path
+    arr = np.asarray(matrix, dtype=np.float32)
+    if arr.shape != (size, size):
+        return None, path
+    return arr, path
+
+
 def write_instance_artifacts(
     out_dir: Path,
     instance_name: str,
@@ -169,6 +380,8 @@ def evaluate_model_dgl(
     device: torch.device,
     time_limit: float,
     perturbation_moves: int,
+    profile_flops: bool,
+    reuse_predictions: bool,
 ) -> Dict:
     """Evaluate a DGL model checkpoint on the given ATSP size and dataset.
 
@@ -179,6 +392,9 @@ def evaluate_model_dgl(
     # Use the model factory which also loads weights when model_path is set
     model = get_dgl_model(args)
     model.eval()
+    model_param_count = int(sum(p.numel() for p in model.parameters() if p.requires_grad))
+    results_metadata = extract_model_metadata(base_args)
+    results_metadata['model_param_count'] = model_param_count
 
     # Dataset in lazy mode to retrieve NX graphs
     test_dataset = ATSPDatasetDGL(
@@ -190,6 +406,22 @@ def evaluate_model_dgl(
         device=device,
         load_once=False,
     )
+
+    flops_per_forward = None
+    estimated_total_flops = None
+    if profile_flops and not reuse_predictions and len(test_dataset) > 0:
+        H_sample, sample_graph = test_dataset[0]
+        sample_features = H_sample.ndata['weight']
+        flops_per_forward = measure_forward_flops(
+            model,
+            H_sample,
+            sample_features,
+            device,
+            enabled=True,
+        )
+        if flops_per_forward is not None:
+            estimated_total_flops = float(flops_per_forward * len(test_dataset))
+        del H_sample, sample_features, sample_graph
 
     # Output dirs (model-specific to avoid collisions within same SLURM folder)
     model_dir = ckpt_path.parent
@@ -213,6 +445,12 @@ def evaluate_model_dgl(
         'gls_times': [],
         'num_nodes': size,
         'instances': [],
+        'model_param_count': model_param_count,
+        'hidden_dim': results_metadata.get('hidden_dim'),
+        'num_heads': results_metadata.get('num_heads'),
+        'num_gnn_layers': results_metadata.get('num_gnn_layers'),
+        'flops_per_forward': flops_per_forward,
+        'estimated_total_flops': estimated_total_flops,
     }
 
     pbar = tqdm.tqdm(range(len(test_dataset)), desc=f"{ckpt_path.name} @ {size}")
@@ -220,31 +458,52 @@ def evaluate_model_dgl(
         # Load graph and build scaled features
         H, G = test_dataset[idx]
         x = H.ndata['weight']
-        # warmup model
-        if idx == 0:
+        y_pred = None
+
+        if not reuse_predictions:
+            # warmup model
+            if idx == 0:
+                with torch.no_grad():
+                    _ = model(H, x)
+            # Predict regrets with timing
+            t0 = time.time()
             with torch.no_grad():
-                _ = model(H, x)
-        # Predict regrets with timing
-        t0 = time.time()
-        with torch.no_grad():
-            y_pred = model(H, x)
-        model_time = time.time() - t0
-        results['total_model_time'] += model_time
-        results['model_times'].append(float(model_time))
+                y_pred = model(H, x)
+            model_time = time.time() - t0
+            results['total_model_time'] += model_time
+            results['model_times'].append(float(model_time))
 
-        regret_pred_vec = test_dataset.scalers.inverse_transform(
-            y_pred.detach().cpu().flatten(), 'regret'
-        )
+            regret_pred_vec = test_dataset.scalers.inverse_transform(
+                y_pred.detach().cpu().flatten(), 'regret'
+            )
 
-        # Write predicted regrets back to graph
-        edge_idx = 0
-        for i in range(size):
-            for j in range(size):
-                if i == j:
-                    continue
-                if (i, j) in G.edges:
-                    G.edges[(i, j)]['regret_pred'] = max(float(regret_pred_vec[edge_idx]), 0.0)
-                edge_idx += 1
+            # Write predicted regrets back to graph
+            edge_idx = 0
+            for i in range(size):
+                for j in range(size):
+                    if i == j:
+                        continue
+                    if (i, j) in G.edges:
+                        G.edges[(i, j)]['regret_pred'] = max(float(regret_pred_vec[edge_idx]), 0.0)
+                    edge_idx += 1
+
+            regret_pred_mat_np = add_diag(size, y_pred.detach().cpu().flatten()).numpy()
+        else:
+            saved_mat, saved_path = load_saved_regret_pred_matrix(
+                base_out_dir, size, test_dataset.instances[idx]
+            )
+            if saved_mat is None:
+                raise FileNotFoundError(
+                    f"Missing saved predictions for instance {test_dataset.instances[idx]} (size {size}) at {saved_path}"
+                )
+            for i in range(size):
+                for j in range(size):
+                    if i == j:
+                        continue
+                    if (i, j) in G.edges:
+                        G.edges[(i, j)]['regret_pred'] = max(float(saved_mat[i, j]), 0.0)
+            results['model_times'].append(0.0)
+            regret_pred_mat_np = saved_mat
 
         # Initial tour by predicted regret
         init_tour = nearest_neighbor(G, start=0, weight='regret_pred')
@@ -269,14 +528,13 @@ def evaluate_model_dgl(
             [[G.edges[(i, j)]['weight'] if i != j else 0.0 for j in range(size)] for i in range(size)]
         )
         regret_mat = add_diag(size, H.ndata['regret'].detach().cpu().flatten()).numpy()
-        regret_pred_mat = add_diag(size, y_pred.detach().cpu().flatten()).numpy()
 
         write_instance_artifacts(
             out_dir=out_dir_txt,
             instance_name=str(test_dataset.instances[idx]),
             edge_weight=edge_weight,
             regret_mat=regret_mat,
-            regret_pred_mat=regret_pred_mat,
+            regret_pred_mat=regret_pred_mat_np,
             opt_cost=float(opt_cost),
             num_iterations=int(cnt_iters),
             init_cost=float(init_cost),
@@ -293,7 +551,9 @@ def evaluate_model_dgl(
         results['avg_cnt_search'].append(int(cnt_iters))
 
         # Free
-        del H, x, y_pred
+        del H, x
+        if y_pred is not None:
+            del y_pred
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
@@ -324,7 +584,9 @@ def summarize_to_csv(rows: List[Dict], out_csv: Path) -> None:
         'slurm_dir', 'model_file', 'relations', 'agg', 'framework', 'model',
         'atsp_size', 'avg_init_gap', 'avg_final_gap',
         'avg_init_cost', 'avg_final_cost', 'avg_opt_cost',
-        'total_model_time', 'total_gls_time'
+        'total_model_time', 'total_gls_time',
+        'model_param_count', 'hidden_dim', 'num_heads', 'num_gnn_layers',
+        'flops_per_forward', 'estimated_total_flops'
     ]
     with open(out_csv, 'w', newline='') as f:
         w = csv.DictWriter(f, fieldnames=cols)
@@ -342,6 +604,25 @@ def main():
     parser.add_argument('--perturbation_moves', type=int, default=30)
     parser.add_argument('--only_dirs', type=str, nargs='*', default=None)
     parser.add_argument('--limit_models', type=int, default=None)
+    parser.add_argument(
+        '--profile_flops',
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help='Profile a sample forward pass to estimate FLOPs for each model (default: enabled).',
+    )
+    parser.add_argument(
+        '--reuse_predictions',
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help='Reuse saved regret predictions instead of running the model.',
+    )
+    parser.add_argument(
+        '--override_sizes',
+        type=int,
+        nargs='*',
+        default=None,
+        help='ATSP sizes to force re-evaluation (e.g., 100 150).',
+    )
     args = parser.parse_args()
 
     cfg = EvalConfig(
@@ -352,6 +633,9 @@ def main():
         perturbation_moves=args.perturbation_moves,
         only_dirs=args.only_dirs,
         limit_models=args.limit_models,
+        profile_flops=args.profile_flops,
+        reuse_predictions=args.reuse_predictions,
+        override_sizes=tuple(args.override_sizes) if args.override_sizes else None,
     )
 
     project_root = Path(__file__).resolve().parents[2]
@@ -365,6 +649,9 @@ def main():
         return
 
     all_rows: List[Dict] = []
+    override_set = set(cfg.override_sizes) if cfg.override_sizes is not None else None
+    if cfg.reuse_predictions and override_set is None:
+        print('Warning: --reuse-predictions has no effect without --override_sizes; skipping reuse.')
 
     for ckpt in checkpoints:
         try:
@@ -373,6 +660,15 @@ def main():
             agg = base_args.get('agg', 'sum')
             framework = base_args.get('framework', 'dgl')
             model_name = base_args.get('model', 'HetroGAT')
+            metadata = extract_model_metadata(base_args)
+            metadata['model_param_count'] = None
+            fallback_size = cfg.sizes[0] if cfg.sizes else base_args.get('atsp_size', 100)
+            if framework == 'dgl':
+                metadata['model_param_count'] = compute_model_param_count(
+                    ckpt_path=ckpt,
+                    base_args=base_args,
+                    fallback_size=int(base_args.get('atsp_size', fallback_size)),
+                )
 
             for size in cfg.sizes:
                 data_dir = dataset_path_for_size(project_root, size)
@@ -380,37 +676,110 @@ def main():
                     print(f"Skip size {size}: dataset folder not found: {data_dir}")
                     continue
 
+                summary_path = result_json_path(ckpt, size)
+                summary_exists = summary_path.exists()
+                force_override = override_set is not None and size in override_set
+                apply_reuse = cfg.reuse_predictions and force_override
+
+                if summary_exists and not force_override:
+                    print(
+                        f"Skip {ckpt.name} size {size}: found existing results at {summary_path}"
+                    )
+                    try:
+                        with open(summary_path, 'r') as f:
+                            existing_results = json.load(f)
+                        if framework == 'dgl' and (
+                            existing_results.get('flops_per_forward') is None
+                            or existing_results.get('estimated_total_flops') is None
+                        ) and cfg.profile_flops:
+                            flops_forward, flops_total = refresh_flops_for_size(
+                                ckpt_path=ckpt,
+                                base_args=base_args,
+                                size=size,
+                                project_root=project_root,
+                                enabled=cfg.profile_flops,
+                            )
+                            if flops_forward is not None:
+                                existing_results['flops_per_forward'] = flops_forward
+                                existing_results['estimated_total_flops'] = flops_total
+                        all_rows.append(
+                            build_summary_row(
+                                ckpt,
+                                relations,
+                                agg,
+                                framework,
+                                model_name,
+                                size,
+                                existing_results,
+                                metadata,
+                            )
+                        )
+                    except Exception as exc:
+                        print(f"Failed to load existing summary {summary_path}: {exc}")
+                    continue
+
                 if framework != 'dgl':
                     print(f"Skipping non-DGL checkpoint for now: {ckpt} (framework={framework})")
                     continue
+
+                if summary_exists and force_override:
+                    print(
+                        f"Override {ckpt.name} size {size}: recomputing GLS"
+                        f" (reuse_predictions={'yes' if apply_reuse else 'no'})"
+                    )
+
+                total_time_budget = _TOTAL_GLS_TIME_BY_SIZE.get(size)
+                if total_time_budget is not None:
+                    per_instance_time_limit = total_time_budget / 30.0
+                else:
+                    per_instance_time_limit = cfg.time_limit
 
                 res = evaluate_model_dgl(
                     ckpt_path=ckpt,
                     size=size,
                     data_dir=data_dir,
                     device=device,
-                    time_limit=cfg.time_limit,
+                    time_limit=per_instance_time_limit,
                     perturbation_moves=cfg.perturbation_moves,
+                    profile_flops=cfg.profile_flops,
+                    reuse_predictions=apply_reuse,
                 )
+                if framework == 'dgl' and (
+                    res.get('flops_per_forward') is None
+                    or res.get('estimated_total_flops') is None
+                ) and cfg.profile_flops:
+                    flops_forward, flops_total = refresh_flops_for_size(
+                        ckpt_path=ckpt,
+                        base_args=base_args,
+                        size=size,
+                        project_root=project_root,
+                        enabled=cfg.profile_flops,
+                    )
+                    if flops_forward is not None:
+                        res['flops_per_forward'] = flops_forward
+                        res['estimated_total_flops'] = flops_total
+                for key in (
+                    'model_param_count',
+                    'hidden_dim',
+                    'num_heads',
+                    'num_gnn_layers',
+                ):
+                    if metadata.get(key) is None and res.get(key) is not None:
+                        metadata[key] = res.get(key)
 
                 # Add a summary row
-                row = {
-                    'slurm_dir': ckpt.parent.name,
-                    'model_file': ckpt.name,
-                    'relations': '_'.join(relations) if isinstance(relations, (list, tuple)) else relations,
-                    'agg': agg,
-                    'framework': framework,
-                    'model': model_name,
-                    'atsp_size': size,
-                    'avg_init_gap': res.get('avg_init_gaps'),
-                    'avg_final_gap': res.get('avg_final_gaps'),
-                    'avg_init_cost': res.get('avg_init_costs'),
-                    'avg_final_cost': res.get('avg_final_costs'),
-                    'avg_opt_cost': res.get('avg_opt_costs'),
-                    'total_model_time': res.get('total_model_time'),
-                    'total_gls_time': res.get('total_gls_time'),
-                }
-                all_rows.append(row)
+                all_rows.append(
+                    build_summary_row(
+                        ckpt,
+                        relations,
+                        agg,
+                        framework,
+                        model_name,
+                        size,
+                        res,
+                        metadata,
+                    )
+                )
         except Exception as e:
             print(f"Error evaluating {ckpt}: {e}")
             continue

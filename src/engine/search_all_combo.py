@@ -64,6 +64,30 @@ def all_nonempty_subsets(seq: List[str]) -> Iterable[Tuple[str, ...]]:
         for comb in itertools.combinations(seq, r):
             yield tuple(sorted(comb))
 
+
+def parse_relation_subsets(raw_subsets: Iterable[str], all_relations: Iterable[str]) -> List[Tuple[str, ...]]:
+    """Parse user-provided relation subset strings into sorted tuples."""
+    valid = set(all_relations)
+    parsed: List[Tuple[str, ...]] = []
+    for subset in raw_subsets:
+        parts = [p.strip() for p in subset.replace("-", "_").split(",") if p.strip()]
+        if not parts:
+            continue
+        unknown = [p for p in parts if p not in valid]
+        if unknown:
+            raise ValueError(f"Unknown relation types in subset '{subset}': {unknown}. Valid types: {sorted(valid)}")
+        parsed.append(tuple(sorted(parts)))
+    if not parsed:
+        raise ValueError("No valid relation subsets parsed from --relation-subsets")
+    # deduplicate while preserving order
+    deduped = []
+    seen = set()
+    for combo in parsed:
+        if combo not in seen:
+            deduped.append(combo)
+            seen.add(combo)
+    return deduped
+
 def safe_execute(fn, *args, **kwargs):
     """Execute function with OOM error handling."""
     try:
@@ -371,8 +395,16 @@ def run_optuna_search(args: Any, n_trials: int = 20, n_jobs: int = 1):
     Path(output_dir).mkdir(parents=True, exist_ok=True)
     framework = args.framework.lower()
 
-    relation_subsets = list(all_nonempty_subsets(list(args.relation_types)))
-    agg_methods = ["sum"]  # you said only one agg type
+    if getattr(args, "relation_subsets", None):
+        relation_subsets = parse_relation_subsets(args.relation_subsets, args.relation_types)
+        logger.info(
+            "Using user-defined relation subsets (%d): %s",
+            len(relation_subsets),
+            ["_".join(combo) for combo in relation_subsets],
+        )
+    else:
+        relation_subsets = list(all_nonempty_subsets(list(args.relation_types)))
+    agg_methods = ["stack"]  # you said only one agg type
 
     logger.info(f"Starting search: {len(relation_subsets)} relation subsets × {len(agg_methods)} agg methods")
     logger.info("Each trial: Size 500 test -> Train on size 50 if passed -> Save if best")

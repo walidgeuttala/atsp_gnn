@@ -147,37 +147,25 @@ class ATSPTesterDGLExport(ATSPTesterDGL):
             [[G.edges[(i, j)]['weight'] if i != j else 0.0 for j in range(n)] for i in range(n)],
             dtype=np.float32
         )
-        regret_mat = self._add_diag(n, H.ndata['regret'].detach().cpu().flatten()).numpy()
-        regret_pred_mat = self._add_diag(n, y_pred.detach().cpu().flatten()).numpy()
-        # Unscaled true regrets and in_solution mask
         regret_true_vec = test_dataset.scalers.inverse_transform(
             H.ndata['regret'].detach().cpu().flatten(), 'regret'
         )
-        regret_true_mat = self._add_diag(n, regret_true_vec).numpy()
-        in_solution_mat = self._add_diag(n, H.ndata['in_solution'].detach().cpu().flatten()).numpy()
+        regret_true_mat = self._add_diag(n, regret_true_vec).detach().cpu().numpy()
+        regret_pred_mat = self._add_diag(n, regret_pred_vec).detach().cpu().numpy()
 
         # Write standard three blocks first
+        cnt_ans = int(num_iterations)
         write_instance_artifacts(
             out_dir=out_dirs['txt'],
             instance_name=str(test_dataset.instances[instance_idx]),
             edge_weight=edge_weight,
-            regret_mat=regret_mat,
+            regret_mat=regret_true_mat,
             regret_pred_mat=regret_pred_mat,
             opt_cost=float(opt_cost),
-            num_iterations=int(num_iterations),
+            num_iterations=cnt_ans,
             init_cost=float(init_cost),
             best_cost=float(best_cost),
         )
-        # Append regret_true and in_solution blocks for validation
-        fp = out_dirs['txt'] / f"instance{str(test_dataset.instances[instance_idx]).replace(os.sep, '_')}.txt"
-        with open(fp, 'a') as f:
-            f.write("\nregret_true:\n")
-            np.savetxt(f, regret_true_mat, fmt="%.8f", delimiter=" ")
-            f.write("\n")
-
-            f.write("in_solution:\n")
-            np.savetxt(f, in_solution_mat, fmt="%.0f", delimiter=" ")
-            f.write("\n")
 
         # Cleanup
         del H, x, y_pred, regret_pred_vec
