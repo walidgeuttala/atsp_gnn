@@ -666,6 +666,8 @@ class ATSPDatasetBuilder:
         weight_max: int = 1000,
         lkh_path: str = "../LKH-3.0.9/LKH",
         seed: Optional[int] = None,
+        problem_type: str = "ATSP",  # <-- new attribute
+        k_agents: Optional[int] = None,  # for KTSP
     ):
         self.n_nodes = n_nodes
         self.n_instances = n_instances
@@ -674,18 +676,26 @@ class ATSPDatasetBuilder:
         self.weight_max = weight_max
         self.lkh_path = lkh_path
         self.seed = seed
+        self.problem_type = problem_type  # <-- store problem type
+        self.k_agents = k_agents
 
     # --- generators ---
 
     def _iter_random_instances(self) -> Iterable[ATSPInstance]:
         rng = np.random.default_rng(self.seed)
         for _ in range(self.n_instances):
-            if hasattr(self, 'problem_type') and self.problem_type == "HCP":
+            if self.problem_type == "HCP":
                 hcp_instance = HCPInstance.from_random(self.n_nodes, rng=rng)
                 yield hcp_instance.to_atsp()
-            elif hasattr(self, 'problem_type') and self.problem_type == "HPP":
+            elif self.problem_type == "HPP":
                 hpp_instance = HPPInstance.from_random(self.n_nodes, rng=rng)
                 yield hpp_instance.to_atsp()
+            elif self.problem_type == "KTSP":
+                k = self.k_agents if self.k_agents is not None else 2
+                ktsp_instance = KTSPInstance.from_random(
+                    self.n_nodes, k, self.weight_min, self.weight_max, rng=rng
+                )
+                yield ktsp_instance.to_atsp()
             else:
                 yield ATSPInstance.from_random(
                     self.n_nodes, self.weight_min, self.weight_max, rng=rng
@@ -803,7 +813,7 @@ class ATSPDatasetBuilder:
                 inst.tour, inst.cost = tour, cost
 
             # Labels (only if requested)
-            if compute_regrets:
+            if compute_regrets and self.problem_type == "ATSP":
                 try:
                     inst.label_regrets(
                         mode=regret_mode,
@@ -845,7 +855,6 @@ class ATSPDatasetBuilder:
 
         logging.info("Finished building dataset: saved %d instances to %s", count, self.output_dir)
 
-
 # =========================================================
 # CLI (instances only; dataset building)
 # =========================================================
@@ -856,7 +865,7 @@ def _main():
     parser.add_argument("n_samples", type=int, help="Number of instances to generate (ignored if --from_pt_file provided)")
     parser.add_argument("n_nodes", type=int, help="Number of nodes per instance (ignored if --from_pt_file provided)")
     parser.add_argument("out_dir", type=pathlib.Path, help="Output directory")
-    parser.add_argument("--weight_min", type=int, default=100)
+    parser.add_argument("--weight_min", type=int, default=100) 
     parser.add_argument("--weight_max", type=int, default=1000)
     parser.add_argument("--lkh_path", type=str, default="../LKH-3.0.9/LKH")
     parser.add_argument("--regret_mode", type=str, default="fixed_edge_lkh",
@@ -871,39 +880,31 @@ def _main():
     parser.add_argument("--no_regret", action="store_true",
                         help="If set, skip regret labeling (still solves each instance to get base tour/cost).")
     parser.add_argument("--seed", type=int, default=None, help="Random seed for instance generation (optional).")
-    parser.add_argument("--problem_type", type=str, default="ATSP", choices=["ATSP", "HCP", "HPP"],
-                        help="Type of problem to generate: ATSP (default), HCP, or HPP.")
+    parser.add_argument("--problem_type", type=str, default="ATSP", choices=["ATSP", "HCP", "HPP", "KTSP"],
+                        help="Type of problem to generate: ATSP (default), HCP, HPP, or KTSP.")
+    parser.add_argument("--n_agents", type=int, default=None,
+                        help="Number of agents (for KTSP problems).")
     args = parser.parse_args()
 
-    # Adjust subdir name based on problem type
-    subdir_name = f"{args.problem_type}_{args.n_nodes}x{args.n_samples}"
+    # Adjust subdir name based on problem type and number of agents (if KTSP)
+    if args.problem_type == "KTSP":
+        k_agents = args.n_agents if args.n_agents is not None else 2
+        subdir_name = f"{args.problem_type}_{args.n_nodes}x{args.n_samples}_k{k_agents}"
+    else:
+        subdir_name = f"{args.problem_type}_{args.n_nodes}x{args.n_samples}"
     out_dir = args.out_dir / subdir_name
     os.makedirs(out_dir, exist_ok=True)
-
-    if args.problem_type == "HCP":
-        builder = ATSPDatasetBuilder(
-            n_nodes=args.n_nodes,
-            n_instances=args.n_samples,
-            output_dir=out_dir,
-            seed=args.seed,
-        )
-    elif args.problem_type == "HPP":
-        builder = ATSPDatasetBuilder(
-            n_nodes=args.n_nodes,
-            n_instances=args.n_samples,
-            output_dir=out_dir,
-            seed=args.seed,
-        )
-    else:  # Default to ATSP
-        builder = ATSPDatasetBuilder(
-            n_nodes=args.n_nodes,
-            n_instances=args.n_samples,
-            output_dir=out_dir,
-            weight_min=args.weight_min,
-            weight_max=args.weight_max,
-            lkh_path=args.lkh_path,
-            seed=args.seed,
-        )
+    builder = ATSPDatasetBuilder(
+        n_nodes=args.n_nodes,
+        n_instances=args.n_samples,
+        output_dir=out_dir,
+        weight_min=args.weight_min,
+        weight_max=args.weight_max,
+        lkh_path=args.lkh_path,
+        seed=args.seed,
+        problem_type=args.problem_type,
+        k_agents=args.n_agents if args.problem_type == "KTSP" else None,
+    )
 
     builder.build_and_save(
         from_tsplib_dir=args.from_tsplib_dir,
