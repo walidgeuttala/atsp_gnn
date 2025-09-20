@@ -366,38 +366,52 @@ class HCPInstance:
 
     def to_atsp(self) -> "ATSPInstance":
         """
-        Convert this HCPInstance to ATSPInstance.
+        Convert this HPPInstance to ATSPInstance.
         False -> 1000*n, True -> 1, diagonal -> 0
         """
         n = self.adj.shape[0]
-        adj = np.where(self.adj, 1, 1000 * n).astype(float)
+        adj = np.where(self.adj, 1, 1_000 * n).astype(float)
         np.fill_diagonal(adj, 0.0)
         return ATSPInstance(adj=adj)
-
-    def from_atsp_solution(self, atsp_tour: List[int], atsp_cost: float) -> None:
+    
+    @classmethod
+    def from_atsp_instance(cls, atsp_instance: "ATSPInstance") -> "HCPInstance":
         """
-        Convert an ATSP solution (tour and cost) back to HCP solution format.
-        - Extracts the cycle from the ATSP tour.
-        - Validates the cycle cost matches the ATSP cost.
-        """
-        n = self.adj.shape[0]
+        Convert an ATSPInstance to an HCPInstance.
+        - Converts the weight matrix (adj) to a boolean adjacency matrix.
+        - Extracts the Hamiltonian cycle from the ATSP tour.
+        - Validates the cycle and returns an HCPInstance.
 
+        Args:
+            atsp_instance (ATSPInstance): The ATSP instance containing the adjacency matrix and solution.
+
+        Returns:
+            HCPInstance: The corresponding HCP instance.
+        """
+        n = atsp_instance.adj.shape[0]
+
+        # Convert the weight matrix to a boolean adjacency matrix
+        adj = (atsp_instance.adj == 1)  # True for edges with weight exactly 1, False otherwise
         # Extract the cycle from the ATSP tour
-        self.cycle = []
-        for node in atsp_tour:
-            if node < n and node not in self.cycle:
-                self.cycle.append(node)
+        if atsp_instance.tour is None:
+            raise ValueError("ATSPInstance does not have a valid tour.")
 
         # Validate the cycle forms a valid Hamiltonian cycle
-        if len(self.cycle) != n:
+        if len(atsp_instance.tour) != n:
             raise ValueError("ATSP tour does not form a valid Hamiltonian cycle.")
 
-        # Validate the cost matches
-        cycle_cost = sum(self.adj[self.cycle[i], self.cycle[(i + 1) % n]] for i in range(n))
-        if not np.isclose(cycle_cost, atsp_cost):
-            raise ValueError("ATSP cost does not match the Hamiltonian cycle cost.")
+        # Check if the ATSP tour contains any edge that is not True in the boolean adjacency
+        for i in range(len(atsp_instance.tour)):
+            u, v = atsp_instance.tour[i], atsp_instance.tour[(i + 1)%len(atsp_instance.tour)]
+            if not adj[u, v]:
+            # If any edge in the tour is not present, no cycle exists
+                return cls(adj=adj, hasCycle=False, cycle=None)
 
-        self.hasCycle = True
+        
+        cycle = atsp_instance.tour.copy()
+
+        # Return the HCPInstance
+        return cls(adj=adj, hasCycle=True, cycle=cycle)
 
 @dataclass
 class HPPInstance:
@@ -433,27 +447,48 @@ class HPPInstance:
         return ATSPInstance(adj=adj)
     
     @classmethod
-    def from_atsp_solution(cls, atsp_instance: "ATSPInstance", solution: List[int]) -> "HPPInstance":
+    def from_atsp_instance(cls, atsp_instance: ATSPInstance) -> HCPInstance:
         """
-        Create an HPPInstance from an ATSP solution.
-
-        Args:
-            atsp_instance (ATSPInstance): The ATSP instance containing the adjacency matrix.
-            solution (List[int]): The solution path for the ATSP instance.
-
-        Returns:
-            HPPInstance: The corresponding HPP instance.
+        Convert an ATSPInstance to an HCPInstance.
+        - Converts the weight matrix (adj) to a boolean adjacency matrix.
+        - Extracts the Hamiltonian cycle from the ATSP tour.
+        - Validates the cycle and returns an HCPInstance.
+        A valid path is found if at most one edge in the tour is False.
+        If an edge is False, the path should start with the node the edge targets.
         """
         n = atsp_instance.adj.shape[0]
-        adj = np.zeros((n, n), dtype=bool)
+        adj = (atsp_instance.adj == 1)  # True for edges with weight exactly 1, False otherwise
 
-        # Reconstruct the adjacency matrix for the HPP instance based on the solution
-        for i in range(len(solution) - 1):
-            adj[solution[i], solution[i + 1]] = True
-        adj[solution[-1], solution[0]] = True  # Close the cycle
+        if atsp_instance.tour is None:
+            raise ValueError("ATSPInstance does not have a valid tour.")
 
-        return cls(adj=adj, hasPath=True, path=solution)
+        # Validate the cycle forms a valid Hamiltonian cycle
+        if len(atsp_instance.tour) != n:
+            raise ValueError("ATSP tour does not form a valid Hamiltonian cycle.")
 
+        # Count the number of False edges in the tour
+        false_edges = []
+        for i in range(len(atsp_instance.tour)):
+            u, v = atsp_instance.tour[i], atsp_instance.tour[(i + 1) % len(atsp_instance.tour)]
+            if not adj[u, v]:
+                false_edges.append((u, v))
+
+        if len(false_edges) == 0:
+            # All edges are True, valid cycle
+            cycle = atsp_instance.tour.copy()
+            return cls(adj=adj, hasCycle=True, cycle=cycle)
+        elif len(false_edges) == 1:
+            # One edge is False, valid path starting at the target of the False edge
+            _, start_node = false_edges[0]
+            # Rotate tour so it starts at start_node
+            tour = atsp_instance.tour.copy()
+            idx = tour.index(start_node)
+            path = tour[idx:] + tour[:idx]
+            return cls(adj=adj, hasCycle=False, cycle=path)
+        else:
+            # More than one False edge, not a valid path/cycle
+            return cls(adj=adj, hasCycle=False, cycle=None)
+        
 @dataclass
 class KTSPInstance:
     adj: np.ndarray  # (n, n) adjacency (float)
@@ -499,40 +534,92 @@ class KTSPInstance:
         # Set diagonal to 0
         np.fill_diagonal(expanded, 0.0)
         return ATSPInstance(adj=expanded)
-
-    def from_atsp_solution(self, atsp_tour: List[int], atsp_cost: float) -> None:
+    
+    @classmethod
+    def from_atsp_instance(cls, atsp_instance: ATSPInstance, k: int) -> "KTSPInstance":
         """
-        Convert an ATSP solution (tour and cost) back to KTSP solution format.
-        - Extracts k tours from the ATSP tour.
+        Convert an ATSPInstance (expanded from KTSP) back to KTSPInstance with solution.
+        - Validates that the ATSP tour is of correct size.
+        - Validates that the k copies of the main node have weight 1.0 (except diagonal).
+        - Validates that the k copies have the same weights to/from other nodes.
+        - Extracts k tours from the ATSP tour (if available).
         - Computes individual costs for each tour.
+        - Returns KTSPInstance with tours and costs.
         """
-        n = self.adj.shape[0]
-        k = self.k
+        n = atsp_instance.adj.shape[0]
+        orig_n = n - k + 1
+
+        # Validate that the k copies of the main node have weight 1.0 (except diagonal)
+        for i in range(k):
+            for j in range(k):
+                if i != j and not atsp_instance.adj[i, j] == 1.0:
+                    raise ValueError(f"Edge ({i},{j}) between main node copies does not have weight 1.0.")
+
+        # Validate that the k copies have the same weights to/from other nodes
+        for i in range(k):
+            for v in range(k, n):
+                ref_out = atsp_instance.adj[i, v]
+                ref_in = atsp_instance.adj[v, i]
+                for j in range(k):
+                    if atsp_instance.adj[j, v] != ref_out:
+                        raise ValueError(f"Copy node {j} has different outgoing weight to node {v} than copy {i}.")
+                    if atsp_instance.adj[v, j] != ref_in:
+                        raise ValueError(f"Copy node {j} has different incoming weight from node {v} than copy {i}.")
+
+        # Validate that the ATSP tour is of correct size
+        if atsp_instance.tour is None:
+            return cls(adj=atsp_instance.adj[k-1:, k-1:].copy(), k=k, tours=None, costs=None)
+        if len(atsp_instance.tour) != n:
+            raise ValueError(f"ATSP tour length {len(atsp_instance.tour)} does not match expected {n}.")
+
+        # Extract the original adjacency matrix
+        adj = atsp_instance.adj[k-1:, k-1:].copy()
 
         # Split the ATSP tour into k separate tours
-        self.tours = []
-        self.costs = []
+        tours = []
+        costs = []
         current_tour = []
         current_cost = 0.0
+        # Map each value to u - (k-1), central nodes < k set to 0
+        mapped_tour = []
+        for u in atsp_instance.tour:
+            if u < k:
+                mapped_tour.append(0)
+            else:
+                mapped_tour.append(u - (k - 1))
 
-        for i in range(len(atsp_tour) - 1):
-            current_tour.append(atsp_tour[i])
-            current_cost += self.adj[atsp_tour[i], atsp_tour[i + 1]]
+        # Split the mapped tour into segments at 0, creating an embedded array (list of lists)
+        split_indices = [i for i, v in enumerate(mapped_tour) if v == 0]
+        
+        # If the first value is not 0, merge last and first segments
+        segments = []
+        for i in range(len(split_indices)):
+            start = split_indices[i]
+            end = split_indices[i + 1] if i + 1 < len(split_indices) else len(mapped_tour)
+            seg = mapped_tour[start:end]
+            if seg:
+                segments.append(seg)
 
-            # Check if we completed a tour (returning to a copy of the first node)
-            if len(current_tour) > 1 and atsp_tour[i + 1] < k:
-                self.tours.append(current_tour)
-                self.costs.append(current_cost)
-                current_tour = []
-                current_cost = 0.0
+        # Merge last and first if needed
+        if segments and segments[0][0] != 0:
+            segments[0] = segments[-1] + segments[0]
+            segments = segments[:-1]
 
+        # Evaluate each tour segment
+        costs = []
+        for seg in segments:
+            # Calculate cost for this segment
+            cost = 0.0
+            for i in range(len(seg)):
+                cost += adj[seg[i], seg[(i + 1)%len(seg)]]
+            costs.append(cost)
         # Ensure all k tours are extracted
-        if len(self.tours) != k:
+        if len(tours) != k:
             raise ValueError("ATSP tour does not match expected k tours.")
-
         # Validate total cost matches
-        if not np.isclose(sum(self.costs), atsp_cost):
+        if not np.isclose(sum(costs), atsp_instance.cost):
             raise ValueError("ATSP cost does not match sum of k-tour costs.")
+        return cls(adj=adj, k=k, tours=tours, costs=costs)
 
 @dataclass
 class MultiAgentTSPInstance:
@@ -565,37 +652,6 @@ class MultiAgentTSPInstance:
         for k in range(1, max_agents + 1):
             ktsp_list.append(KTSPInstance(adj=self.adj.copy(), k=k))
         return ktsp_list
-
-    def from_atsp_solution(self, atsp_tour: List[int], atsp_cost: float) -> None:
-        """
-        Convert an ATSP solution (tour and cost) back to MultiAgentTSP solution format.
-        - Splits the ATSP tour into individual agent tours.
-        - Computes the cost for each agent's tour.
-        """
-        n = self.adj.shape[0]
-        self.agent_tours = []
-        self.agent_costs = []
-        current_tour = []
-        current_cost = 0.0
-
-        for i in range(len(atsp_tour) - 1):
-            current_tour.append(atsp_tour[i])
-            current_cost += self.adj[atsp_tour[i], atsp_tour[i + 1]]
-
-            # Check if we completed an agent's tour (returning to a starting node)
-            if len(current_tour) > 1 and atsp_tour[i + 1] < n:
-                self.agent_tours.append(current_tour)
-                self.agent_costs.append(current_cost)
-                current_tour = []
-                current_cost = 0.0
-
-        # Ensure all agent tours are extracted
-        if len(self.agent_tours) == 0:
-            raise ValueError("ATSP tour does not match expected agent tours.")
-
-        # Validate total cost matches
-        if not np.isclose(sum(self.agent_costs), atsp_cost):
-            raise ValueError("ATSP cost does not match sum of agent tour costs.")
 
 # -------------------------
 # Dataset builder
