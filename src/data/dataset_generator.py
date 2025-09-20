@@ -813,7 +813,7 @@ class ATSPDatasetBuilder:
                 inst.tour, inst.cost = tour, cost
 
             # Labels (only if requested)
-            if compute_regrets and self.problem_type == "ATSP":
+            if compute_regrets:
                 try:
                     inst.label_regrets(
                         mode=regret_mode,
@@ -909,8 +909,8 @@ def _main():
     builder.build_and_save(
         from_tsplib_dir=args.from_tsplib_dir,
         from_pt_file=args.from_pt_file,
-        regret_mode=args.regret_mode if args.problem_type == "ATSP" else None,
-        compute_regrets=(not args.no_regret) if args.problem_type == "ATSP" else None,
+        regret_mode=args.regret_mode ,
+        compute_regrets= not args.no_regret,
         parallel=args.parallel if args.problem_type == "ATSP" else None,
         processes=args.processes if args.problem_type == "ATSP" else None,
         save_graph_pickles=True,
