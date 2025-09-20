@@ -7,6 +7,7 @@ import torch
 import networkx as nx
 import tsplib95
 import lkh
+import tqdm
 from utils.algorithms import guided_local_search, nearest_neighbor
 from utils.atsp_utils import tour_cost, optimal_cost, get_adj_matrix_string, is_valid_tour
 from data.dataset_dgl_large import ATSPDatasetDGL
@@ -217,7 +218,9 @@ class ATSPTesterDGLLarge:
         limit = getattr(self.args, 'limit_instances', None)
         if isinstance(limit, int) and limit > 0:
             total = min(total, limit)
-        for idx in range(total):
+
+        pbar = tqdm.tqdm(range(total), desc=f"ATSP {self.args.atsp_size}")
+        for idx in pbar:
             instance_result = self.test_instance(model, test_dataset, idx)
             results['instance_results'].append(instance_result)
 
@@ -226,6 +229,13 @@ class ATSPTesterDGLLarge:
                         'model_times', 'gls_times']:
                 field = key[:-1] if key.endswith('s') else key
                 results[key].append(instance_result[field])
+
+            pbar.set_postfix({
+                'avg_init_gap': f"{np.mean(results['init_gaps']):.2f}%",
+                'avg_final_gap': f"{np.mean(results['final_gaps']):.2f}%",
+                'avg_iter': f"{np.mean(results['num_iterations']):.1f}",
+                'avg_time': f"{np.mean(results['gls_times']):.3f}s"
+            })
 
         # Aggregate statistics
         for key in ['opt_costs', 'init_costs', 'final_costs',
@@ -241,11 +251,12 @@ class ATSPTesterDGLLarge:
     def run_test(self, model):
         test_dataset = self.create_test_dataset()
         results = self.test_all(model, test_dataset)
-        # save next to model_path for consistency with run_large print
-        # Save next to the checkpoint directory (model_path may be a file)
-        base_dir = self.args.model_path
-        if isinstance(base_dir, str) and base_dir.endswith('.pt'):
-            base_dir = os.path.dirname(base_dir)
+        # Save next to the checkpoint directory unless a results_dir override is provided
+        base_dir = getattr(self.args, 'results_dir', None)
+        if not base_dir:
+            base_dir = self.args.model_path
+            if isinstance(base_dir, str) and base_dir.endswith('.pt'):
+                base_dir = os.path.dirname(base_dir)
         out_dir = os.path.join(base_dir, f"test_atsp{self.args.atsp_size}")
         os.makedirs(out_dir, exist_ok=True)
         out_file = os.path.join(out_dir, "results.json")

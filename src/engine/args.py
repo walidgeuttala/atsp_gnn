@@ -34,6 +34,8 @@ def train_test_parser() -> argparse.ArgumentParser:
     parser.add_argument('--data_path', type=str, default=None,
                         help='Alternative single-path dataset (used by some test scripts)')
     parser.add_argument('--atsp_size', type=int, default=50)
+    parser.add_argument('--results_dir', type=str, default=None,
+                        help='Optional override for where test outputs are written')
     parser.add_argument('--relation_types', nargs='+', default=['ss', 'st', 'tt', 'pp'],
                         help='Relation types used by dataset')
     parser.add_argument('--relation_subsets', nargs='+', default=None,

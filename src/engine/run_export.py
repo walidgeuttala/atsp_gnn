@@ -25,8 +25,16 @@ def main():
 
     if framework == 'dgl':
         trainer_module = 'src.engine.train_dgl'
-        # Use the export tester instead of the standard one
-        tester_module = 'src.engine.test_dgl_export'
+        use_large = (
+            getattr(args, 'sub_size', None) is not None
+            and getattr(args, 'atsp_size', None) is not None
+            and args.sub_size < args.atsp_size
+        )
+        tester_module = (
+            'src.engine.test_dgl_export_large'
+            if use_large
+            else 'src.engine.test_dgl_export'
+        )
     elif framework == 'pyg':
         trainer_module = 'src.engine.train_pyg'
         tester_module = 'src.engine.test_pyg'
@@ -52,7 +60,11 @@ def main():
 
     elif mode == 'test':
         mod = locate(tester_module)
-        TesterClass = getattr(mod, 'ATSPTesterDGLExport', None) or getattr(mod, 'ATSPTesterPyG', None)
+        TesterClass = (
+            getattr(mod, 'ATSPTesterDGLLargeExport', None)
+            or getattr(mod, 'ATSPTesterDGLExport', None)
+            or getattr(mod, 'ATSPTesterPyG', None)
+        )
         if TesterClass is None:
             raise AttributeError(f'{tester_module} has no Tester class (ATSPTesterDGLExport/ATSPTesterPyG)')
         tester = TesterClass(args)
@@ -77,4 +89,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-

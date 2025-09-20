@@ -15,10 +15,8 @@ class TemplateManager:
     ) -> pathlib.Path:
         """Get template path based on relation types."""
         templates_dir = dataset_dir / "templates"
-        
         type_str = "_".join(relation_types)
-        
-        # Determine subdirectory
+
         num_types = len(relation_types)
         if num_types == 1:
             subdir = "single"
@@ -31,10 +29,15 @@ class TemplateManager:
         else:
             subdir = ""
 
-        # Try specific path first, then fallback to base
-        if not subdir=='':
-            template_path = templates_dir / subdir / f"template_{atsp_size}_{type_str}.dgl"
-            return template_path
-        
-        # Fallback to base template
-        return templates_dir / f"template_{atsp_size}.dgl"
+        candidates = []
+        if subdir:
+            candidates.append(templates_dir / subdir / f"template_{atsp_size}_{type_str}.dgl")
+
+        candidates.append(templates_dir / f"template_{atsp_size}.dgl")
+        candidates.append(templates_dir / f"full_template_{atsp_size}.dgl")
+
+        for path in candidates:
+            if path.exists():
+                return path
+
+        return candidates[0]

@@ -1,89 +1,106 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
-# Sample data based on the table
-atsp_sizes = [150, 250, 500, 1000]
-hetero_time_initial = [4.45, 14.95, 82.46, None]
-hetero_time_final = [6.25, 15.05, 82.88, None]
+# ATSP sizes
+atsp_sizes = [100, 150, 250, 500, 1000]
 
-matnet_time = [4.24, 8.48, None, None]   # OOM for size 500 and 1000
-glop_time = [13.99, 14.86, 17.06, 22.57] 
+# Data for each method (None for OOM or missing)
+methods = [
+    {
+        "label": "MatNet",
+        "gap": [1.84, 82.92, 181.68, None, None],
+        "time": [3.24, 4.24, 8.48, None, None],
+        "color": "#ff7f0e",
+        "marker": "^",
+        "linestyle": (0, (5, 2, 1, 2, 1, 2)),
+    },
+    {
+        "label": "GLOP",
+        "gap": [8.85, 17.91, 27.96, 38.96, 47.77],
+        "time": [14.25, 13.99, 14.86, 17.06, 22.57],
+        "color": "#2ca02c",
+        "marker": "o",
+        "linestyle": (0, (1, 2)),
+    },
+    {
+        "label": "Het-GAT-Concat + E2",
+        "gap": [9.39, 10.84, 13.49, 17.03, None],
+        "time": [3.32, 4.44, 6.63, 15.05, None],
+        "heuristic": [2.67, 3.79, 5.97, 14.30, None],
+        "color": "#1f77b4",
+        "marker": "x",
+        "linestyle": (0, (5, 5)),
+    },
+    {
+        "label": "Het-GAT-Concat + E3",
+        "gap": [2.84, 4.88, 8.34, 7.89, None],
+        "time": [2.35, 2.80, 0.75, 7.20, None],
+        "heuristic": [1.70, 2.15, 0.09, 6.45, None],
+        "color": "#d62728",
+        "marker": "s",
+        "linestyle": (0, (5, 2, 1, 2)),
+    },
+    {
+        "label": "Het-GAT-Attn + E2",
+        "gap": [10.86, 12.08, 14.29, 16.25, 58.94],
+        "time": [3.23, 4.66, 8.26, 37.17, 95.50],
+        "heuristic": [2.65, 3.83, 5.87, 14.25, 52.48],
+        "color": "#9467bd",
+        "marker": "D",
+        "linestyle": (0, (3, 1, 1, 1)),
+    },
+    {
+        "label": "Het-GAT-Attn + E3",
+        "gap": [3.45, 4.76, 8.50, 8.54, 53.14],
+        "time": [2.52, 3.11, 2.48, 23.37, 52.73],
+        "heuristic": [1.94, 2.28, 0.09, 0.45, 9.71],
+        "color": "#8c564b",
+        "marker": "P",
+        "linestyle": (0, (1, 1)),
+    },
+]
 
-matnet_gap_final = [82.92, 181.68, None, None] # OOM for size 500 and 1000
-glop_gap_final = [17.91, 27.96, 38.96, 47.77] 
-avg_gap_gnn = [13.09, 13.04, 15.65, None]
-avg_gap_final = [4.75, 7.82, 9.38, None]
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(22, 10))
 
-# Create figure and subplots with larger size
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
+# Plot execution time
+for m in methods:
+    # Main time
+    ax1.plot(atsp_sizes, m["time"], marker=m["marker"], markersize=16,
+             markeredgewidth=2.5, markerfacecolor='none',
+             linestyle=m["linestyle"], linewidth=4,
+             color=m["color"], label=m["label"])
+    # Heuristic phase (if available)
+    if "heuristic" in m:
+        ax1.plot(atsp_sizes, m["heuristic"], marker=m["marker"], markersize=10,
+                 markeredgewidth=1.5, markerfacecolor='none',
+                 linestyle=":", linewidth=2,
+                 color=m["color"], alpha=0.7, label=f"{m['label']} (heuristic)")
 
-# Plot execution time on left axis with TRIPLED line widths and larger markers
-l1 = ax1.plot(atsp_sizes, hetero_time_initial, marker='x', markersize=20,
-             markeredgewidth=3, markerfacecolor='none',
-             linestyle=(0, (5, 5)), linewidth=6,
-             color='#1f77b4', label='Het-GAT-Concat + Greedy')
+# Plot gap comparison
+for m in methods:
+    ax2.plot(atsp_sizes, m["gap"], marker=m["marker"], markersize=16,
+             markeredgewidth=2.5, markerfacecolor='none',
+             linestyle=m["linestyle"], linewidth=4,
+             color=m["color"], label=m["label"])
 
-l2 = ax1.plot(atsp_sizes, hetero_time_final, marker='s', markersize=18,
-             markeredgewidth=3, markerfacecolor='none',
-             linestyle=(0, (5, 2, 1, 2)), linewidth=6,
-             color='#d62728', label='Het-GAT-Concat + Edge Builder + 3-opt')
-
-l3 = ax1.plot(atsp_sizes, matnet_time, marker='^', markersize=19,
-             markeredgewidth=3, markerfacecolor='none',
-             linestyle=(0, (5, 2, 1, 2, 1, 2)), linewidth=6,
-             color='#ff7f0e', label='MatNet')
-
-l4 = ax1.plot(atsp_sizes, glop_time, marker='o', markersize=18,
-             markeredgewidth=3, markerfacecolor='none',
-             linestyle=(0, (1, 2)), linewidth=6,
-             color='#2ca02c', label='GLOP')
-
-# Plot gap comparison on right axis with same enhanced styling
-ax2.plot(atsp_sizes, avg_gap_gnn, marker='x', markersize=20,
-        markeredgewidth=3, markerfacecolor='none',
-        linestyle=(0, (5, 5)), linewidth=6,
-        color='#1f77b4')
-
-ax2.plot(atsp_sizes, avg_gap_final, marker='s', markersize=18,
-        markeredgewidth=3, markerfacecolor='none',
-        linestyle=(0, (5, 2, 1, 2)), linewidth=6,
-        color='#d62728')
-
-ax2.plot(atsp_sizes, matnet_gap_final, marker='^', markersize=19,
-        markeredgewidth=3, markerfacecolor='none',
-        linestyle=(0, (5, 2, 1, 2, 1, 2)), linewidth=6,
-        color='#ff7f0e')
-
-ax2.plot(atsp_sizes, glop_gap_final, marker='o', markersize=18,
-        markeredgewidth=3, markerfacecolor='none',
-        linestyle=(0, (1, 2)), linewidth=6,
-        color='#2ca02c')
-
-# Set y-axis to logarithmic scale for both subplots
-ax1.set_yscale('log')
-ax2.set_yscale('log')
-
-# Enhanced formatting with larger fonts
+# Log scale and formatting
 for ax in (ax1, ax2):
     ax.set_xlabel('ATSP Size', fontsize=22)
     ax.set_xticks(atsp_sizes)
     ax.tick_params(axis='both', labelsize=18)
-    ax.grid(True, linewidth=1.5, which='both')  # Add grid for both major and minor ticks
-    
-# Massive titles and labels
+    ax.grid(True, linewidth=1.5, which='both')
+    ax.set_yscale('log')
+    ax.set_ylim(1, 200 if ax is ax2 else 1, 200)
+
 ax1.set_title('Execution Time Comparison (log scale)', fontsize=26, pad=25)
 ax1.set_ylabel('Time (s)', fontsize=22)
-ax1.set_ylim(1, 1000)  # Adjusted for log scale
-
 ax2.set_title('Average Gap Comparison (log scale)', fontsize=26, pad=25)
 ax2.set_ylabel('Avg Gap (%)', fontsize=22)
-ax2.set_ylim(1, 1000)  # Adjusted for log scale
 
-# Bold unified legend
-handles = [l1[0], l2[0], l3[0], l4[0]]
-ax2.legend(handles=handles, labels=[h.get_label() for h in handles],
-          loc='upper right', fontsize=18, framealpha=0.9,
-          handlelength=3, handletextpad=1)
+# Legends
+ax1.legend(loc='upper left', fontsize=14, framealpha=0.9, handlelength=3, handletextpad=1)
+ax2.legend(loc='upper left', fontsize=14, framealpha=0.9, handlelength=3, handletextpad=1)
 
-plt.tight_layout(pad=5.0)  # More padding
-plt.savefig('result_plot.pdf', bbox_inches='tight', dpi=300)
+plt.tight_layout(pad=5.0)
+plt.savefig('result_plot_full.pdf', bbox_inches='tight', dpi=300)
 plt.close()

@@ -126,6 +126,7 @@ def select_best_combos(
     batch: pd.DataFrame,
     target_sizes: Iterable[int],
     max_iterations: Optional[int] = None,
+    keep_all_iterations: bool = False,
 ) -> pd.DataFrame:
     target_sizes = list(target_sizes)
     batch = batch.copy()
@@ -140,7 +141,10 @@ def select_best_combos(
             group = group[group["iterations"] <= max_iterations]
         if group.empty:
             continue
-        best_hybrid = group.sort_values(["avg_gap_pct", "total_time_s"]).iloc[0]
+        ranked_hybrid = group.sort_values(["avg_gap_pct", "total_time_s"])  # best first
+        selected_rows = ranked_hybrid.itertuples(index=False)
+        if not keep_all_iterations:
+            selected_rows = [ranked_hybrid.iloc[0]]
 
         candidates = batch.query(
             "agg == @agg and relation_key == @rel and atsp_size == @size"
@@ -149,45 +153,72 @@ def select_best_combos(
             continue
         best_model = candidates.sort_values("avg_final_gap").iloc[0]
 
-        merged_rows.append(
-            {
-                "relations": rel,
-                "agg": agg,
-                "atsp_size": size,
-                "iterations": int(best_hybrid["iterations"]),
-                "three_opt_gap_pct": float(best_hybrid["avg_gap_pct"]),
-                "gnn_gap_pct": float(best_model["avg_init_gap"]),
-                "two_opt_gap_pct": float(best_model["avg_final_gap"]),
-                "model_file": best_model["model_file"],
-                "slurm_dir": best_model.get("slurm_dir", ""),
-                "framework": best_model.get("framework", ""),
-                "model": best_model.get("model", ""),
-                "gnn_time_s": float(best_model["total_model_time"]),
-                "two_opt_total_time_s": float(best_model["total_gls_time"]),
-                "three_opt_time_s": float(best_hybrid["total_time_s"]),
-                "combined_total_time_s": float(best_model["total_model_time"] + best_hybrid["total_time_s"]),
-                "avg_opt_cost": float(best_model["avg_opt_cost"]),
-                "model_param_count": best_model.get("model_param_count"),
-                "hidden_dim": best_model.get("hidden_dim"),
-                "num_heads": best_model.get("num_heads"),
-                "num_gnn_layers": best_model.get("num_gnn_layers"),
-                "three_opt_source": best_hybrid.get("source", ""),
-            }
-        )
+        for entry in selected_rows:
+            # `entry` is a namedtuple when coming from itertuples and a Series otherwise.
+            if hasattr(entry, "_fields"):
+                iter_count = getattr(entry, "iterations")
+                avg_gap = getattr(entry, "avg_gap_pct")
+                total_time = getattr(entry, "total_time_s")
+                source = getattr(entry, "source", "")
+            else:  # pandas Series from list indexing
+                iter_count = entry["iterations"]
+                avg_gap = entry["avg_gap_pct"]
+                total_time = entry["total_time_s"]
+                source = entry.get("source", "")
+
+            merged_rows.append(
+                {
+                    "relations": rel,
+                    "agg": agg,
+                    "atsp_size": size,
+                    "iterations": int(iter_count),
+                    "three_opt_gap_pct": float(avg_gap),
+                    "gnn_gap_pct": float(best_model["avg_init_gap"]),
+                    "two_opt_gap_pct": float(best_model["avg_final_gap"]),
+                    "model_file": best_model["model_file"],
+                    "slurm_dir": best_model.get("slurm_dir", ""),
+                    "framework": best_model.get("framework", ""),
+                    "model": best_model.get("model", ""),
+                    "gnn_time_s": float(best_model["total_model_time"]),
+                    "two_opt_total_time_s": float(best_model["total_gls_time"]),
+                    "three_opt_time_s": float(total_time),
+                    "combined_two_opt_time_s": float(
+                        best_model["total_model_time"] + best_model["total_gls_time"]
+                    ),
+                    "combined_three_opt_time_s": float(
+                        best_model["total_model_time"] + total_time
+                    ),
+                    # Preserve legacy name for downstream code until consumers switch over.
+                    "combined_total_time_s": float(
+                        best_model["total_model_time"] + total_time
+                    ),
+                    "avg_opt_cost": float(best_model["avg_opt_cost"]),
+                    "model_param_count": best_model.get("model_param_count"),
+                    "hidden_dim": best_model.get("hidden_dim"),
+                    "num_heads": best_model.get("num_heads"),
+                    "num_gnn_layers": best_model.get("num_gnn_layers"),
+                    "three_opt_source": source,
+                }
+            )
 
     result = pd.DataFrame(merged_rows)
     if result.empty:
         raise ValueError("No matching combinations between hybrid logs and batch summary")
 
-    result = result.sort_values(["atsp_size", "relations", "agg"], ignore_index=True)
+    result = result.sort_values(
+        ["atsp_size", "relations", "agg", "three_opt_gap_pct", "iterations"],
+        ignore_index=True,
+    )
     return result
 
 
 def format_for_table(result: pd.DataFrame) -> pd.DataFrame:
     formatted = result.copy()
     formatted["GNN Time (s)"] = formatted["gnn_time_s"].round(2)
+    formatted["Edge Builder + 2-Opt Time (s)"] = formatted["two_opt_total_time_s"].round(2)
     formatted["Edge Builder + 3-Opt Time (s)"] = formatted["three_opt_time_s"].round(2)
-    formatted["Total Time (s)"] = formatted["combined_total_time_s"].round(2)
+    formatted["Total Time 2-Opt (s)"] = formatted["combined_two_opt_time_s"].round(2)
+    formatted["Total Time 3-Opt (s)"] = formatted["combined_three_opt_time_s"].round(2)
     formatted["Avg Gap GNN (%)"] = formatted["gnn_gap_pct"].round(2)
     formatted["Avg Gap 2-Opt (%)"] = formatted["two_opt_gap_pct"].round(2)
     formatted["Avg Gap 3-Opt (%)"] = formatted["three_opt_gap_pct"].round(2)
@@ -200,8 +231,10 @@ def format_for_table(result: pd.DataFrame) -> pd.DataFrame:
             "iterations",
             "model_file",
             "GNN Time (s)",
+            "Edge Builder + 2-Opt Time (s)",
             "Edge Builder + 3-Opt Time (s)",
-            "Total Time (s)",
+            "Total Time 2-Opt (s)",
+            "Total Time 3-Opt (s)",
             "Avg Gap GNN (%)",
             "Avg Gap 2-Opt (%)",
             "Avg Gap 3-Opt (%)",
@@ -246,6 +279,11 @@ def main() -> None:
         help="Optional cap on iterations when selecting hybrid runs",
     )
     parser.add_argument(
+        "--keep-all-iterations",
+        action="store_true",
+        help="Keep every hybrid iteration entry instead of only the best gap per group",
+    )
+    parser.add_argument(
         "--out-csv",
         type=Path,
         default=Path("jobs/search/output.csv"),
@@ -262,7 +300,13 @@ def main() -> None:
     else:
         raise ValueError("Provide either --hybrid-csv or --hybrid-logs")
     batch_df = load_batch_summary(args.batch_summary)
-    merged = select_best_combos(hybrid_df, batch_df, args.target_sizes, args.max_iterations)
+    merged = select_best_combos(
+        hybrid_df,
+        batch_df,
+        args.target_sizes,
+        args.max_iterations,
+        keep_all_iterations=args.keep_all_iterations,
+    )
 
     detail_path = args.out_csv
     merged.to_csv(detail_path, index=False)

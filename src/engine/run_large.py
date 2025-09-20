@@ -72,10 +72,12 @@ def main():
         model = get_model(args)
 
         results = tester.run_test(model)
-        # Derive results directory next to checkpoint if model_path is a file
-        base_dir = args.model_path
-        if isinstance(base_dir, str) and base_dir.endswith('.pt'):
-            base_dir = os.path.dirname(base_dir)
+        # Derive results directory next to checkpoint unless overridden
+        base_dir = getattr(args, 'results_dir', None)
+        if not base_dir:
+            base_dir = args.model_path
+            if isinstance(base_dir, str) and base_dir.endswith('.pt'):
+                base_dir = os.path.dirname(base_dir)
         print(f"Testing completed. Results saved to {base_dir}/test_atsp{args.atsp_size}/results.json")
 
     else:

@@ -138,11 +138,38 @@ def ensure_dir(p: Path) -> None:
     p.mkdir(parents=True, exist_ok=True)
 
 
-def result_json_path(ckpt_path: Path, size: int) -> Path:
-    """Return the expected summary JSON path for a checkpoint/size pair."""
+def output_dirs_for(ckpt_path: Path, size: int) -> Tuple[Path, Path, Path]:
+    """Return (base_dir, summary_dir, per-instance_dir) for a checkpoint/size."""
     model_dir = ckpt_path.parent
     ckpt_stem = ckpt_path.stem.replace(os.sep, '_')
-    return model_dir / ckpt_stem / f"test_atsp{size}" / "results.json"
+    base_dir = model_dir / ckpt_stem
+    summary_dir = base_dir / f"test_atsp{size}"
+    per_instance_dir = base_dir / "trial_0" / f"test_atsp{size}"
+    return base_dir, summary_dir, per_instance_dir
+
+
+def result_json_path(ckpt_path: Path, size: int) -> Path:
+    """Return the expected summary JSON path for a checkpoint/size pair."""
+    _, summary_dir, _ = output_dirs_for(ckpt_path, size)
+    return summary_dir / "results.json"
+
+
+def outputs_complete_for_size(
+    ckpt_path: Path,
+    size: int,
+) -> Tuple[bool, Path, Path, Optional[str]]:
+    """Check if both summary JSON and per-instance outputs exist for size."""
+    _, summary_dir, per_instance_dir = output_dirs_for(ckpt_path, size)
+    summary_path = summary_dir / "results.json"
+
+    if not summary_path.exists():
+        return False, summary_path, per_instance_dir, "results.json missing"
+    if not per_instance_dir.exists():
+        return False, summary_path, per_instance_dir, "per-instance directory missing"
+    has_instances = any(per_instance_dir.glob('instance*.txt'))
+    if not has_instances:
+        return False, summary_path, per_instance_dir, "per-instance directory empty"
+    return True, summary_path, per_instance_dir, None
 
 
 def extract_model_metadata(base_args: Dict) -> Dict:
@@ -424,11 +451,7 @@ def evaluate_model_dgl(
         del H_sample, sample_features, sample_graph
 
     # Output dirs (model-specific to avoid collisions within same SLURM folder)
-    model_dir = ckpt_path.parent
-    ckpt_stem = ckpt_path.stem.replace(os.sep, '_')
-    base_out_dir = model_dir / ckpt_stem
-    out_dir_json = base_out_dir / f"test_atsp{size}"
-    out_dir_txt = base_out_dir / "trial_0" / f"test_atsp{size}"
+    base_out_dir, out_dir_json, out_dir_txt = output_dirs_for(ckpt_path, size)
     ensure_dir(out_dir_json)
     ensure_dir(out_dir_txt)
 
@@ -676,12 +699,14 @@ def main():
                     print(f"Skip size {size}: dataset folder not found: {data_dir}")
                     continue
 
-                summary_path = result_json_path(ckpt, size)
+                outputs_ok, summary_path, per_instance_dir, missing_reason = outputs_complete_for_size(
+                    ckpt, size
+                )
                 summary_exists = summary_path.exists()
                 force_override = override_set is not None and size in override_set
-                apply_reuse = cfg.reuse_predictions and force_override
+                apply_reuse = cfg.reuse_predictions and force_override and outputs_ok
 
-                if summary_exists and not force_override:
+                if outputs_ok and not force_override:
                     print(
                         f"Skip {ckpt.name} size {size}: found existing results at {summary_path}"
                     )
@@ -722,11 +747,20 @@ def main():
                     print(f"Skipping non-DGL checkpoint for now: {ckpt} (framework={framework})")
                     continue
 
-                if summary_exists and force_override:
-                    print(
-                        f"Override {ckpt.name} size {size}: recomputing GLS"
-                        f" (reuse_predictions={'yes' if apply_reuse else 'no'})"
-                    )
+                if summary_exists:
+                    if force_override:
+                        extra = ''
+                        if missing_reason:
+                            extra = f"; prior outputs incomplete ({missing_reason})"
+                        print(
+                            f"Override {ckpt.name} size {size}: recomputing GLS"
+                            f" (reuse_predictions={'yes' if apply_reuse else 'no'}){extra}"
+                        )
+                    elif missing_reason:
+                        print(
+                            f"Regenerate {ckpt.name} size {size}: {missing_reason}"
+                            f" (expected outputs under {per_instance_dir})"
+                        )
 
                 total_time_budget = _TOTAL_GLS_TIME_BY_SIZE.get(size)
                 if total_time_budget is not None:
