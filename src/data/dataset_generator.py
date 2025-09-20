@@ -524,8 +524,8 @@ class KTSPInstance:
         expanded[k:, k:] = self.adj[1:, 1:]
         # Copy edges from original node 0 to all nodes
         for i in range(k):
-            expanded[i, k:] = self.adj[0, k:]
-            expanded[k:, i] = self.adj[k:, 0]
+            expanded[i, k:] = self.adj[0, 1:]
+            expanded[k:, i] = self.adj[1:, 0]
         # Set edges between the k copies to 1, except self-loops
         for i in range(k):
             for j in range(k):
