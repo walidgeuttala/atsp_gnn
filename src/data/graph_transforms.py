@@ -21,11 +21,11 @@ class LineGraphTransform:
         self.directed = directed
         self.half_st = half_st
 
-    def create_line_graph_template(self, n_nodes: int) -> dgl.DGLGraph:
-        """Create optimized line graph template for complete graph with n nodes."""
-        # Create complete directed graph
-        g = nx.complete_graph(n_nodes, create_using=nx.DiGraph())
-        return self._optimized_line_graph(g)
+        def create_line_graph_template(self, n_nodes: int) -> dgl.DGLGraph:
+            """Create optimized line graph template for complete graph with n nodes."""
+            # Create complete directed graph
+            g = nx.complete_graph(n_nodes, create_using=nx.DiGraph())
+            return self._optimized_line_graph(g)
     
     def _optimized_line_graph(self, g: nx.DiGraph) -> dgl.DGLGraph:
         """Optimized line graph transformation."""
