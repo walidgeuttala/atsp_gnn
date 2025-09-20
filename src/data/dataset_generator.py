@@ -521,11 +521,11 @@ class KTSPInstance:
         # Create expanded adjacency matrix
         expanded = np.full((new_n, new_n), n * 1000, dtype=float)
         # Copy original adjacency
-        expanded[k-1:, k-1:] = self.adj[1:, 1:]
+        expanded[k:, k:] = self.adj[1:, 1:]
         # Copy edges from original node 0 to all nodes
         for i in range(k):
-            expanded[i, k-1:] = self.adj[0, 1:]
-            expanded[k-1:, i] = self.adj[1:, 0]
+            expanded[i, k:] = self.adj[0, k:]
+            expanded[k:, i] = self.adj[k:, 0]
         # Set edges between the k copies to 1, except self-loops
         for i in range(k):
             for j in range(k):

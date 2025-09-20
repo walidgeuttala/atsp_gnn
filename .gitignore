@@ -29,3 +29,5 @@ slurm-*.out
 LKH-3.0.9/
 saved_model/
 saved_dataset/
+
+output
