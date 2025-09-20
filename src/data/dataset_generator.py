@@ -680,9 +680,16 @@ class ATSPDatasetBuilder:
     def _iter_random_instances(self) -> Iterable[ATSPInstance]:
         rng = np.random.default_rng(self.seed)
         for _ in range(self.n_instances):
-            yield ATSPInstance.from_random(
-                self.n_nodes, self.weight_min, self.weight_max, rng=rng
-            )
+            if hasattr(self, 'problem_type') and self.problem_type == "HCP":
+                hcp_instance = HCPInstance.from_random(self.n_nodes, rng=rng)
+                yield hcp_instance.to_atsp()
+            elif hasattr(self, 'problem_type') and self.problem_type == "HPP":
+                hpp_instance = HPPInstance.from_random(self.n_nodes, rng=rng)
+                yield hpp_instance.to_atsp()
+            else:
+                yield ATSPInstance.from_random(
+                    self.n_nodes, self.weight_min, self.weight_max, rng=rng
+                )
 
     def _iter_tsplib_dir(self, dir_path: pathlib.Path) -> Iterable[ATSPInstance]:
         for name in sorted(os.listdir(dir_path)):
@@ -864,29 +871,47 @@ def _main():
     parser.add_argument("--no_regret", action="store_true",
                         help="If set, skip regret labeling (still solves each instance to get base tour/cost).")
     parser.add_argument("--seed", type=int, default=None, help="Random seed for instance generation (optional).")
+    parser.add_argument("--problem_type", type=str, default="ATSP", choices=["ATSP", "HCP", "HPP"],
+                        help="Type of problem to generate: ATSP (default), HCP, or HPP.")
     args = parser.parse_args()
 
-    subdir_name = f"ATSP_{args.n_nodes}x{args.n_samples}"
+    # Adjust subdir name based on problem type
+    subdir_name = f"{args.problem_type}_{args.n_nodes}x{args.n_samples}"
     out_dir = args.out_dir / subdir_name
     os.makedirs(out_dir, exist_ok=True)
 
-    builder = ATSPDatasetBuilder(
-        n_nodes=args.n_nodes,
-        n_instances=args.n_samples,
-        output_dir=out_dir,
-        weight_min=args.weight_min,
-        weight_max=args.weight_max,
-        lkh_path=args.lkh_path,
-        seed=args.seed,
-    )
+    if args.problem_type == "HCP":
+        builder = ATSPDatasetBuilder(
+            n_nodes=args.n_nodes,
+            n_instances=args.n_samples,
+            output_dir=out_dir,
+            seed=args.seed,
+        )
+    elif args.problem_type == "HPP":
+        builder = ATSPDatasetBuilder(
+            n_nodes=args.n_nodes,
+            n_instances=args.n_samples,
+            output_dir=out_dir,
+            seed=args.seed,
+        )
+    else:  # Default to ATSP
+        builder = ATSPDatasetBuilder(
+            n_nodes=args.n_nodes,
+            n_instances=args.n_samples,
+            output_dir=out_dir,
+            weight_min=args.weight_min,
+            weight_max=args.weight_max,
+            lkh_path=args.lkh_path,
+            seed=args.seed,
+        )
 
     builder.build_and_save(
         from_tsplib_dir=args.from_tsplib_dir,
         from_pt_file=args.from_pt_file,
-        regret_mode=args.regret_mode,
-        compute_regrets=(not args.no_regret),
-        parallel=args.parallel,
-        processes=args.processes,
+        regret_mode=args.regret_mode if args.problem_type == "ATSP" else None,
+        compute_regrets=(not args.no_regret) if args.problem_type == "ATSP" else None,
+        parallel=args.parallel if args.problem_type == "ATSP" else None,
+        processes=args.processes if args.problem_type == "ATSP" else None,
         save_graph_pickles=True,
         save_summary_csv=True,
     )
