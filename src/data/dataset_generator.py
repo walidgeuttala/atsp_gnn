@@ -36,6 +36,9 @@ import tsplib95
 import lkh
 from scipy.sparse.csgraph import floyd_warshall
 
+#TODO: add new alternatives for ATSPInstance
+#TODO: add conversion functions
+
 # optional dependency for .pt files
 try:
     import torch  # type: ignore
@@ -191,7 +194,7 @@ class ATSPInstance:
         )
         return f"{header}{body}{fixed}EOF\n"
 
-    def solve_lkh(self, lkh_path: str = "../LKH-3.0.9/LKH") -> Tuple[List[int], float]:
+    def solve_lkh(self, lkh_path: str = "../../lib/LKH-3") -> Tuple[List[int], float]:
         """
         Solve instance via LKH and cache tour/cost.
         Returns tour as zero-based closed cycle [v0, v1, ..., v0] and cost.
@@ -334,6 +337,265 @@ class ATSPInstance:
             G.graph["cost"] = float(self.cost)
         return G
 
+# -------------------------
+# HCP, HPP, K-TSP, Multi-agent TSP instance definitions
+# -------------------------
+
+@dataclass
+class HCPInstance:
+    adj: np.ndarray  # (n, n) adjacency (bool)
+    hasCycle: Optional[bool] = None
+    cycle: Optional[List[int]] = None  # List of nodes in cycle
+
+    @classmethod
+    def from_random(
+        cls,
+        n: int,
+        rng: Optional[np.random.Generator] = None,
+    ) -> "HCPInstance":
+        """
+        Generate a random boolean adjacency matrix for HCP.
+        edge_prob: probability of an edge between any two nodes (excluding self-loops).
+        """
+        edge_prob = np.log(n) / n
+        if rng is None:
+            rng = np.random.default_rng()
+        adj = rng.random((n, n)) < edge_prob
+        np.fill_diagonal(adj, False)  # No self-loops
+        return cls(adj=adj)
+
+    def to_atsp(self) -> "ATSPInstance":
+        """
+        Convert this HCPInstance to ATSPInstance.
+        False -> 1000*n, True -> 1, diagonal -> 0
+        """
+        n = self.adj.shape[0]
+        adj = np.where(self.adj, 1, 1000 * n).astype(float)
+        np.fill_diagonal(adj, 0.0)
+        return ATSPInstance(adj=adj)
+
+    def from_atsp_solution(self, atsp_tour: List[int], atsp_cost: float) -> None:
+        """
+        Convert an ATSP solution (tour and cost) back to HCP solution format.
+        - Extracts the cycle from the ATSP tour.
+        - Validates the cycle cost matches the ATSP cost.
+        """
+        n = self.adj.shape[0]
+
+        # Extract the cycle from the ATSP tour
+        self.cycle = []
+        for node in atsp_tour:
+            if node < n and node not in self.cycle:
+                self.cycle.append(node)
+
+        # Validate the cycle forms a valid Hamiltonian cycle
+        if len(self.cycle) != n:
+            raise ValueError("ATSP tour does not form a valid Hamiltonian cycle.")
+
+        # Validate the cost matches
+        cycle_cost = sum(self.adj[self.cycle[i], self.cycle[(i + 1) % n]] for i in range(n))
+        if not np.isclose(cycle_cost, atsp_cost):
+            raise ValueError("ATSP cost does not match the Hamiltonian cycle cost.")
+
+        self.hasCycle = True
+
+@dataclass
+class HPPInstance:
+    adj: np.ndarray  # (n, n) adjacency (bool)
+    hasPath: Optional[bool] = None
+    path: Optional[List[int]] = None  # List of nodes in path
+
+    @classmethod
+    def from_random(
+        cls,
+        n: int,
+        rng: Optional[np.random.Generator] = None,
+    ) -> "HCPInstance":
+        """
+        Generate a random boolean adjacency matrix for HCP.
+        edge_prob: probability of an edge between any two nodes (excluding self-loops).
+        """
+        edge_prob = np.log(n) / n
+        if rng is None:
+            rng = np.random.default_rng()
+        adj = rng.random((n, n)) < edge_prob
+        np.fill_diagonal(adj, False)  # No self-loops
+        return cls(adj=adj)
+
+    def to_atsp(self) -> "ATSPInstance":
+        """
+        Convert this HPPInstance to ATSPInstance.
+        False -> 1000*n, True -> 1, diagonal -> 0
+        """
+        n = self.adj.shape[0]
+        adj = np.where(self.adj, 1, 1_000 * n).astype(float)
+        np.fill_diagonal(adj, 0.0)
+        return ATSPInstance(adj=adj)
+    
+    @classmethod
+    def from_atsp_solution(cls, atsp_instance: "ATSPInstance", solution: List[int]) -> "HPPInstance":
+        """
+        Create an HPPInstance from an ATSP solution.
+
+        Args:
+            atsp_instance (ATSPInstance): The ATSP instance containing the adjacency matrix.
+            solution (List[int]): The solution path for the ATSP instance.
+
+        Returns:
+            HPPInstance: The corresponding HPP instance.
+        """
+        n = atsp_instance.adj.shape[0]
+        adj = np.zeros((n, n), dtype=bool)
+
+        # Reconstruct the adjacency matrix for the HPP instance based on the solution
+        for i in range(len(solution) - 1):
+            adj[solution[i], solution[i + 1]] = True
+        adj[solution[-1], solution[0]] = True  # Close the cycle
+
+        return cls(adj=adj, hasPath=True, path=solution)
+
+@dataclass
+class KTSPInstance:
+    adj: np.ndarray  # (n, n) adjacency (float)
+    k: int = 1
+    tours: Optional[List[List[int]]] = None  # List of k tours
+    costs: Optional[List[float]] = None
+
+    @classmethod
+    def from_random(
+        cls,
+        n: int,
+        k: int,
+        weight_min: int = 100,
+        weight_max: int = 1000,
+        rng: Optional[np.random.Generator] = None,
+        enforce_metric: bool = True,
+    ) -> "KTSPInstance":
+        atsp = ATSPInstance.from_random(n, weight_min, weight_max, rng, enforce_metric)
+        return cls(adj=atsp.adj.copy(), k=k)
+    
+    def to_atsp(self) -> "ATSPInstance":
+        """
+        Convert KTSPInstance to ATSPInstance by copying the first node k times.
+        - Edges between the copies are set to 1.
+        - All other edges are increased by n * 1000.
+        """
+        n = self.adj.shape[0]
+        k = self.k
+        new_n = n + k - 1
+        # Create expanded adjacency matrix
+        expanded = np.full((new_n, new_n), n * 1000, dtype=float)
+        # Copy original adjacency
+        expanded[k-1:, k-1:] = self.adj[1:, 1:]
+        # Copy edges from original node 0 to all nodes
+        for i in range(k):
+            expanded[i, k-1:] = self.adj[0, 1:]
+            expanded[k-1:, i] = self.adj[1:, 0]
+        # Set edges between the k copies to 1, except self-loops
+        for i in range(k):
+            for j in range(k):
+                if i != j:
+                    expanded[i, j] = 1.0
+        # Set diagonal to 0
+        np.fill_diagonal(expanded, 0.0)
+        return ATSPInstance(adj=expanded)
+
+    def from_atsp_solution(self, atsp_tour: List[int], atsp_cost: float) -> None:
+        """
+        Convert an ATSP solution (tour and cost) back to KTSP solution format.
+        - Extracts k tours from the ATSP tour.
+        - Computes individual costs for each tour.
+        """
+        n = self.adj.shape[0]
+        k = self.k
+
+        # Split the ATSP tour into k separate tours
+        self.tours = []
+        self.costs = []
+        current_tour = []
+        current_cost = 0.0
+
+        for i in range(len(atsp_tour) - 1):
+            current_tour.append(atsp_tour[i])
+            current_cost += self.adj[atsp_tour[i], atsp_tour[i + 1]]
+
+            # Check if we completed a tour (returning to a copy of the first node)
+            if len(current_tour) > 1 and atsp_tour[i + 1] < k:
+                self.tours.append(current_tour)
+                self.costs.append(current_cost)
+                current_tour = []
+                current_cost = 0.0
+
+        # Ensure all k tours are extracted
+        if len(self.tours) != k:
+            raise ValueError("ATSP tour does not match expected k tours.")
+
+        # Validate total cost matches
+        if not np.isclose(sum(self.costs), atsp_cost):
+            raise ValueError("ATSP cost does not match sum of k-tour costs.")
+
+@dataclass
+class MultiAgentTSPInstance:
+    adj: np.ndarray  # (n, n) adjacency (float)
+    agent_tours: Optional[List[List[int]]] = None
+    agent_costs: Optional[List[float]] = None
+
+    @classmethod
+    def from_random(
+        cls,
+        n: int,
+        weight_min: int = 100,
+        weight_max: int = 1000,
+        rng: Optional[np.random.Generator] = None,
+        enforce_metric: bool = True,
+    ) -> "MultiAgentTSPInstance":
+        atsp = ATSPInstance.from_random(n, weight_min, weight_max, rng, enforce_metric)
+        return cls(adj=atsp.adj.copy())
+
+    
+    def to_ktsp_instances(self, max_agents: Optional[int] = None) -> List["KTSPInstance"]:
+        """
+        Create KTSPInstance objects for agent counts from 1 up to max_agents (inclusive).
+        If max_agents is None, use n (number of nodes).
+        """
+        n = self.adj.shape[0]
+        if max_agents is None:
+            max_agents = n
+        ktsp_list = []
+        for k in range(1, max_agents + 1):
+            ktsp_list.append(KTSPInstance(adj=self.adj.copy(), k=k))
+        return ktsp_list
+
+    def from_atsp_solution(self, atsp_tour: List[int], atsp_cost: float) -> None:
+        """
+        Convert an ATSP solution (tour and cost) back to MultiAgentTSP solution format.
+        - Splits the ATSP tour into individual agent tours.
+        - Computes the cost for each agent's tour.
+        """
+        n = self.adj.shape[0]
+        self.agent_tours = []
+        self.agent_costs = []
+        current_tour = []
+        current_cost = 0.0
+
+        for i in range(len(atsp_tour) - 1):
+            current_tour.append(atsp_tour[i])
+            current_cost += self.adj[atsp_tour[i], atsp_tour[i + 1]]
+
+            # Check if we completed an agent's tour (returning to a starting node)
+            if len(current_tour) > 1 and atsp_tour[i + 1] < n:
+                self.agent_tours.append(current_tour)
+                self.agent_costs.append(current_cost)
+                current_tour = []
+                current_cost = 0.0
+
+        # Ensure all agent tours are extracted
+        if len(self.agent_tours) == 0:
+            raise ValueError("ATSP tour does not match expected agent tours.")
+
+        # Validate total cost matches
+        if not np.isclose(sum(self.agent_costs), atsp_cost):
+            raise ValueError("ATSP cost does not match sum of agent tour costs.")
 
 # -------------------------
 # Dataset builder
