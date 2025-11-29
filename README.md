@@ -235,12 +235,3 @@ This project is released under a permissive open-source license (see `LICENSE` i
 ## Contact
 
 For questions or collaboration, please contact: **[guettalawalid@inf.elte.hu](mailto:guettalawalid@inf.elte.hu)**
-
-```
-
-**Notes for you**
-- I used Pipenv and Git LFS in setup because your current repo already follows that pattern. :contentReference[oaicite:0]{index=0}
-- Keep the command names if they match your scripts; otherwise, rename the example calls to the actual filenames you have in `scripts/` and `src/`.
-- The README clearly states regrets are **approximate** (e.g., from LKH-3), which aligns with your paper.
-::contentReference[oaicite:1]{index=1}
-```
