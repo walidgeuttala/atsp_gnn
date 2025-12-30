@@ -2,6 +2,8 @@
 
 This repository contains the implementation of a Graph Neural Network (GNN) guided local search for solving the Asymmetric Traveling Salesperson Problem (ATSP). It leverages Deep Learning frameworks (DGL and PyTorch Geometric) to learn heuristics for the LKH solver.
 
+> **Quick Start**: We have provided example run scripts in `src/job_cpu.sh` and `src/job_gpu.sh`. These files contain practical command-line examples for running the code on different hardware configurations. Please refer to them for a quick understanding of the execution flow.
+
 ## Setup
 
 ### Environment Installation
