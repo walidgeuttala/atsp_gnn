@@ -128,7 +128,8 @@ class ATSPDatasetDGL:
                 
                 edge = (i, j)
                 weights[edge_idx] = G.edges[(i, j)]['weight']
-                regrets[edge_idx] = G.edges[(i, j)]['regret']
+                # Assign regret if exists, else dummy value 0.0
+                regrets[edge_idx] = G.edges[(i, j)].get('regret', 0.0)
                 in_solution[edge_idx] = G.edges[(i, j)]['in_solution']
                 edge_idx += 1
         

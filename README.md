@@ -1,75 +1,109 @@
-# Graph Neural Network Guided Local Search for the Traveling Salesperson Problem
+# Graph Neural Network Guided Local Search for ATSP
 
-Code accompanying the paper [Graph Neural Network Guided Local Search for the Traveling Salesperson Problem](https://arxiv.org/abs/2110.05291).
-
-Want to skip straight to [the example](https://github.com/proroklab/gnngls#minimal-example)?
+This repository contains the implementation of a Graph Neural Network (GNN) guided local search for solving the Asymmetric Traveling Salesperson Problem (ATSP). It leverages Deep Learning frameworks (DGL and PyTorch Geometric) to learn heuristics for the LKH solver.
 
 ## Setup
-We uploaded the test datasets and models using [git lfs](https://git-lfs.github.com/). You must install it to clone the repo correctly.
 
-1. Install [git lfs](https://git-lfs.github.com/)
-2. Install [pipenv](https://pipenv.pypa.io)
-3. Clone the repo
-4. Navigate to the repo and run `pipenv install` in the root directory
-5. Run `pipenv shell` to activate the environment
+### Environment Installation
 
-## Datasets
-The test datasets used in the paper are found in [data](https://github.com/proroklab/gnngls/tree/master/data).
+We recommend using Conda to manage the environment. The detailed requirements are listed in `src/req.txt`.
 
-You can also generate new datasets in two steps: instance generation and preprocessing. You can generate solved TSP instances using:
-```
-./generate_instances.py <number of instances to generate> <number of nodes> <dataset directory>
-```
+```bash
+# Create new Conda environment with Python 3.11
+conda create -n graph2 python=3.11 -y
+conda activate graph2
 
-The specified directory is created. Each instance is a pickled `networkx.Graph`.
+# Install System Dependencies (CUDA 12.1 example)
+export CUDA_HOME=/opt/software/packages/cuda/12.1
+export LD_LIBRARY_PATH=$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 
-Then, prepare the dataset using:
-```
-./preprocess_dataset.py <dataset directory>
-```
-This splits the dataset into training, validation, and test sets written to `train.txt`, `val.txt`, and `test.txt` respectively. It also fits a scaler to the training set.
+# Install PyTorch
+conda install pytorch==2.4.0 torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia -y
 
-After this step, the datasets can be easily manipulated using `gnngls.TSPDataset`. For example, in [train.py](https://github.com/ben-hudson/gnngls/blob/master/scripts/train.py#L89).
+# Install PyTorch Geometric
+conda install pyg -c pyg -y
 
-## Training
-Train the model using:
-```
-./train.py <dataset directory> <tensorboard directory> --use_gpu
-```
-The default optional arguments are those used in the paper. A new directory will be created under the specified Tensorboard directory, and checkpoints and training progress will be written there.
+# Install DGL
+pip3 install dgl -f https://data.dgl.ai/wheels/torch-2.4/cu121/repo.html
 
-## Testing
-Evaluate the model using:
-```
-./test.py <dataset directory>/test.txt <checkpoint path> <run directory> regret_pred --use_gpu
-```
-The default optional arguments are those used in the paper. The search progress for all instances in the dataset will be written to the specified run directory as a pickled `pandas.DataFrame`.
-
-For example, you can run the pretrained model using:
-```
-./test.py ../data/tsp100/test.txt ../models/tsp20/checkpoint_best_val.pt ../runs regret_pred --use_gpu
+# Install additional libraries
+conda install -c conda-forge scikit-learn pandas numpy tqdm matplotlib networkx tsplib95 optuna -y
+pip3 install lkh
 ```
 
-## Minimal Example
-The following is a simple demonstration to help you get started 🙂
-```
-pipenv install
-pipenv shell
-cd scripts
-python generate_instances.py 500 10 data
-python preprocess_dataset.py data --n_train 400 --n_val 50 --n_test 50
-python train.py data models --use_gpu
-python test.py data/test.txt models/<new model directory>/checkpoint_best_val.pt runs regret_pred --use_gpu
+### PYTHONPATH
+
+For the scripts to import modules correctly, you must add the current directory to your `PYTHONPATH`:
+
+```bash
+export PYTHONPATH=$PWD:$PYTHONPATH
 ```
 
-## Citation
-If you this code is useful in your research, please cite our paper:
+## Workflows
+
+### 1. Dataset Generation
+
+Generate synthetic ATSP datasets or process existing TSPLIB instances.
+
+```bash
+# Generate 100 instances of size 50 nodes
+python src/data/dataset_generator.py 100 50 data/ --regret_mode fixed_edge_lkh --parallel
 ```
-@inproceedings{hudson2022graph,
-    title={Graph Neural Network Guided Local Search for the Traveling Salesperson Problem},
-    author={Benjamin Hudson and Qingbiao Li and Matthew Malencia and Amanda Prorok},
-    booktitle={International Conference on Learning Representations},
-    year={2022},
-    url={https://openreview.net/forum?id=ar92oEosBIg}
-}
+This creates `data/ATSP_50x100/` with `.pkl` files and a `summary.csv`.
+
+### 2. Training (Standard)
+
+Train a model on a generated dataset.
+
+```bash
+# Train HeteroGAT on ATSP-50
+python -m src.engine.run --mode train --framework dgl --data_dir data/ATSP_50x100 \
+    --model HetroGAT --atsp_size 50 --batch_size 32 --n_epochs 100 \
+    --agg sum --device cuda --undirected
 ```
+
+### 3. Hyperparameter Search (Advanced)
+
+Use `src.engine.search_all_combo` to run Optuna-based hyperparameter optimization. This script assumes a strategy where configurations are pre-screened on size 500 instances for OOM errors before training on size 50.
+
+```bash
+python -m src.engine.search_all_combo --mode train --framework dgl \
+    --data_dir data/ATSP_3000x50 --model HetroGAT --atsp_size 50 \
+    --batch_size 32 --n_epochs 100 --lr_init 1e-3 --tb_dir ./runs \
+    --device cuda --undirected --n_trials 20 --seed 42 \
+    --relation_types ss st tt pp --relation_subsets st,ss_st
+```
+
+### 4. Testing
+
+Evaluate a trained model on standard test sets.
+
+```bash
+python -m src.engine.run --mode test --framework dgl --atsp_size 100 --model HetroGAT --batch_size 1 \
+    --data_path data/ATSP_30x100 --tb_dir ./runs --agg sum \
+    --model_path runs/Trial_0/best_model.pt \
+    --device cuda --undirected
+```
+
+### 5. Large Graph Inference
+
+For large graphs (e.g., 1000 nodes), use `src.engine.run_large` which employs a subgraph-based approach.
+
+```bash
+python -m src.engine.run_large --mode test --framework dgl \
+  --atsp_size 1000 --sub_size 250 --model HetroGAT --batch_size 1 \
+  --data_path data/ATSP_30x1000 --template_path data/ATSP_30x250 \
+  --tb_dir ./runs --agg sum \
+  --model_path runs/Trial_0/best_model.pt \
+  --device cuda --undirected
+```
+
+## Project Structure
+
+- `src/engine/`: Core execution logic.
+    - `run.py`: Main entry for standard training/testing.
+    - `run_large.py`: Inference on large graphs using subgraphs.
+    - `search_all_combo.py`: Optuna hyperparameter search with OOM screening.
+    - `batch_run_export.py`: Multi-model export utils.
+- `src/models/`: GNN model definitions (`models_dgl.py`).
+- `src/data/`: Data generation (`dataset_generator.py`) and loading.

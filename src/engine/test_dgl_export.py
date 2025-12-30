@@ -141,7 +141,7 @@ class ATSPTesterDGLExport(ATSPTesterDGL):
         final_gap = (best_cost / opt_cost - 1) * 100
 
         # Export artifacts
-        out_dirs = self._resolve_output_dirs()
+        out_dirs = self.args.results_dir if self.args.results_dir else self._resolve_output_dirs()
         # Edge weight matrix
         edge_weight = np.array(
             [[G.edges[(i, j)]['weight'] if i != j else 0.0 for j in range(n)] for i in range(n)],
@@ -156,7 +156,7 @@ class ATSPTesterDGLExport(ATSPTesterDGL):
         # Write standard three blocks first
         cnt_ans = int(num_iterations)
         write_instance_artifacts(
-            out_dir=out_dirs['txt'],
+            out_dir= Path(out_dirs) if self.args.results_dir else out_dirs['txt'],
             instance_name=str(test_dataset.instances[instance_idx]),
             edge_weight=edge_weight,
             regret_mat=regret_true_mat,
