@@ -90,12 +90,12 @@ export PYTHONPATH=/project/c_gnn_001/code/tsp/atsp_gnn/:$PYTHONPATH
 
 # python3 -m src.data.validate_atsp --instances_dir "../jobs/search/12201358/best_model_rel_pp_ss_st_tt_concat/trial_0/test_atsp50" --atsp_size 50
 
-# python3 -m src.engine.search_all_combo \
-#     --data_dir ../saved_dataset/ATSP_3000x50 --model HetroGAT \
-#     --framework dgl --device cuda --undirected \
-#     --n_trials 20 --seed 42 --batch_size 32 --n_epochs 100 \
-#     --relation_types ss st tt pp \
-#     --relation_subsets st
+python3 -m src.engine.search_all_combo \
+    --data_dir ../saved_dataset/ATSP_3000x50 --model HetroGAT \
+    --framework dgl --device cuda --undirected \
+    --n_trials 20 --seed 42 --batch_size 32 --n_epochs 100 \
+    --relation_types ss st tt pp \
+    --relation_subsets st
 
 # python3 -m src.engine.run \
 #     --mode train --framework dgl --model HetroGAT \
@@ -117,4 +117,4 @@ export PYTHONPATH=/project/c_gnn_001/code/tsp/atsp_gnn/:$PYTHONPATH
 #   --results_dir /project/c_gnn_001/code/tsp/atsp_gnn/jobs/search/12201358/best_model_rel_pp_ss_st_tt_concat_export
 
 # python3 -m src.engine.run_eval_custom
-python3 -m src.engine.batch_run_export
+# python3 -m src.engine.batch_run_export

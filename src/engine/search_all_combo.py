@@ -405,6 +405,7 @@ def run_optuna_search(args: Any, n_trials: int = 20, n_jobs: int = 1):
     else:
         relation_subsets = list(all_nonempty_subsets(list(args.relation_types)))
     agg_methods = ["stack"]  # you said only one agg type
+    relation_subsets = [('pp', 'ss', 'st', 'tt')]; agg_methods = ['concat']
 
     logger.info(f"Starting search: {len(relation_subsets)} relation subsets × {len(agg_methods)} agg methods")
     logger.info("Each trial: Size 500 test -> Train on size 50 if passed -> Save if best")
